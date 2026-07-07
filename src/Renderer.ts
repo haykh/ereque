@@ -19,6 +19,10 @@ export default class Renderer {
   public instance: WebGLRenderer;
   public debugFolder: GUI | null = null;
 
+  private params = {
+    clearColor: "#1a1a1a",
+  };
+
   constructor(opts: RendererOptions) {
     this.canvas = opts.canvas;
     this.sizes = opts.sizes;
@@ -28,10 +32,6 @@ export default class Renderer {
       this.debugFolder = opts.debug.getUI().addFolder("renderer");
     }
 
-    const params = {
-      clearColor: "#1a1a1a",
-    };
-
     this.instance = new WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -40,13 +40,21 @@ export default class Renderer {
     // this.instance.toneMappingExposure = 1.75;
     // this.instance.shadowMap.enabled = true;
     // this.instance.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.instance.setClearColor(params.clearColor);
+    this.instance.setClearColor(this.params.clearColor);
 
-    this.debugFolder?.addColor(params, "clearColor").onChange(() => {
-      this.instance.setClearColor(new Color(params.clearColor));
-    });
+    this.debugFolder
+      ?.addColor(this.params, "clearColor")
+      .onChange(() => {
+        this.instance.setClearColor(new Color(this.params.clearColor));
+      })
+      .listen();
 
     this.resize();
+  }
+
+  public setClearColor(color: string) {
+    this.params.clearColor = color;
+    this.instance.setClearColor(this.params.clearColor);
   }
 
   resize() {

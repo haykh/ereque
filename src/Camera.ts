@@ -50,6 +50,19 @@ export default class Camera {
       .listen();
   }
 
+  public setFov(fov: number) {
+    this.instance.fov = fov;
+    this.instance.updateProjectionMatrix();
+  }
+
+  public setPosition(x: number, y: number, z: number) {
+    this.controls.object.position.set(x, y, z);
+  }
+
+  public setTarget(x: number, y: number, z: number) {
+    this.controls.target.set(x, y, z);
+  }
+
   resize() {
     this.instance.aspect = this.sizes.width / this.sizes.height;
     this.instance.updateProjectionMatrix();

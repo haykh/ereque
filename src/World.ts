@@ -7,8 +7,17 @@ import type Resources from "./Utils/Resources";
 export interface WorldOptions {
   time: { elapsedSec: number; deltaSec: number };
   scene: Scene;
-  renderer: { instance: WebGLRenderer };
-  camera: { instance: Camera; controls: OrbitControls };
+  renderer: {
+    instance: WebGLRenderer;
+    setClearColor: (color: string) => void;
+  };
+  camera: {
+    instance: Camera;
+    controls: OrbitControls;
+    setFov: (fov: number) => void;
+    setPosition: (x: number, y: number, z: number) => void;
+    setTarget: (x: number, y: number, z: number) => void;
+  };
   sizes: {
     width: number;
     height: number;
@@ -23,7 +32,7 @@ export class World {
   protected time: WorldOptions["time"];
   protected sizes: WorldOptions["sizes"];
   protected scene: Scene;
-  protected renderer: WebGLRenderer;
+  protected renderer: WorldOptions["renderer"];
   protected camera: WorldOptions["camera"];
   protected resources: Resources;
   protected debug: WorldOptions["debug"];
@@ -34,7 +43,7 @@ export class World {
     this.time = opts.time;
     this.sizes = opts.sizes;
     this.scene = opts.scene;
-    this.renderer = opts.renderer.instance;
+    this.renderer = opts.renderer;
     this.camera = opts.camera;
     this.resources = opts.resources;
     this.debug = opts.debug;

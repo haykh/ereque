@@ -150,7 +150,7 @@ export default class Example extends World {
     this.simulation = new Simulation(1000, {
       time: this.time,
       sizes: this.sizes,
-      renderer: this.renderer,
+      renderer: this.renderer.instance,
       scene: this.scene,
       debug: this.debug,
     });

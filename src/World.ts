@@ -24,7 +24,7 @@ export class World {
   protected sizes: WorldOptions["sizes"];
   protected scene: Scene;
   protected renderer: WebGLRenderer;
-  protected camera: Camera;
+  protected camera: WorldOptions["camera"];
   protected resources: Resources;
   protected debug: WorldOptions["debug"];
 
@@ -35,7 +35,7 @@ export class World {
     this.sizes = opts.sizes;
     this.scene = opts.scene;
     this.renderer = opts.renderer.instance;
-    this.camera = opts.camera.instance;
+    this.camera = opts.camera;
     this.resources = opts.resources;
     this.debug = opts.debug;
 

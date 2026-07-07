@@ -44,7 +44,10 @@ export default class Camera {
     this.controls = new OrbitControls(this.instance, this.canvas);
     this.controls.enableDamping = true;
 
-    this.debugFolder?.add(this.controls, "enabled" as any).name("controls");
+    this.debugFolder
+      ?.add(this.controls, "enabled" as any)
+      .name("controls")
+      .listen();
   }
 
   resize() {

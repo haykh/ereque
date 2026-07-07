@@ -208,7 +208,7 @@ export default class Example extends World {
   }
 
   public override update() {
-    this.simulation.update(this.camera, this.time);
+    this.simulation.update(this.camera.instance, this.time);
   }
 
   destroy() {

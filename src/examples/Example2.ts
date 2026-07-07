@@ -7,7 +7,7 @@ import type { SimulationOptions } from "../GPGPU/Simulation";
 import MouseTracker from "../Utils/MouseTracker";
 
 /*
- * Example with GPGPU grid solver
+ * Example heat diffusion with GPGPU grid solver
  */
 import heatDisplayVertexShader from "./shaders/gpgpu/heat/display.vert";
 import heatDisplayFragmentShader from "./shaders/gpgpu/heat/display.frag";
@@ -143,7 +143,7 @@ export default class Example extends World {
   }
 
   public override update() {
-    this.simulation.update(this.camera, this.time);
+    this.simulation.update(this.camera.instance, this.time);
   }
 
   destroy() {

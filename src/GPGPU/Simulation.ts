@@ -76,7 +76,7 @@ export class GridSimulation extends Simulation {
     super(gpgpuTextureSize, opts);
     this.colormap = colormap;
 
-    this.gridRenderer2D = new GPGPUGridRenderer2D("fluid", {
+    this.gridRenderer2D = new GPGPUGridRenderer2D("renderer", {
       debug: opts.debug,
       scene: opts.scene,
       gpgpu: this.gpgpu,

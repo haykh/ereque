@@ -1,0 +1,22 @@
+{
+  "name": "ereque usage template",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "type": "module",
+  "dependencies": {
+    "ereque": "file:../ereque-1.0.0.tgz",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@fsouza/prettierd": "^0.28.0",
+    "@types/three": "^0.185.0",
+    "globals": "^17.7.0",
+    "typescript-eslint": "^8.63.0",
+    "vite": "^8.1.3"
+  }
+}

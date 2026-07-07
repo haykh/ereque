@@ -5,19 +5,28 @@ A tiny, extensible [Three.js](https://threejs.org/) wrapper with a convenient GP
 ## Develop
 
 ```sh
-npm install
+npm i
 npm run dev      # Vite playground; dev/main.ts imports "ereque" (aliased to src/)
 ```
 
-Other scripts:
+Build and pack:
 
 ```sh
 npm run build       # dist/ = ESM (Vite, shaders inlined) + .d.ts (tsc)
 npm run typecheck
 npm run lint
+npm pack            # produces .tgz file
 ```
 
-## Use it
+## Usage
+
+You can simply copy the embedded `template/` project, change the path to the ereque `.tgz` file and simply `npm i` and start playing with `npm run dev`. 
+
+Otherwise, simply install in your project with:
+
+```sh
+npm i /abs/path/to/ereque-<VERSION>.tgz three
+```
 
 `three` is a peer dependency -- install the version you want. The package is ESM and meant to be consumed through a bundler (Vite, webpack, Rollup, ...).
 
@@ -58,13 +67,12 @@ import Example3 from "ereque/examples/Example3"; // boids
 new Experience(document.querySelector("canvas.webgl"), { World: Example3 });
 ```
 
-- `Example1` — custom shader material on a sphere
-- `Example2` — GPGPU heat-diffusion grid
-- `Example3` — GPGPU boids (flocking) particles
-- `Example4` — GPGPU n-body gravity particles
+- `Example1`: custom shader material on a sphere
+- `Example2`: GPGPU heat-diffusion grid
+- `Example3`: GPGPU boids (flocking) particles
+- `Example4`: GPGPU n-body gravity particles
 
-Preload assets with `sources`; they resolve on `this.resources.items` before
-`initialize()` runs:
+Preload assets with `sources`; they resolve on `this.resources.items` before `initialize()` runs:
 
 ```ts
 import type { SourceList } from "ereque";
@@ -78,25 +86,13 @@ new Experience(canvas, { World: MyWorld, sources });
 
 Append `#debug` to the URL to enable the lil-gui debug panel.
 
-## Install & use
-
-```sh
-# 1. pack from within this root (produces tar.gz):
-npm run build
-npm pack 
-# 2. use in other project:
-npm install /abs/path/to/ereque-<VERSION>.tgz three
-```
-
 ## Exports
 
 - `Experience`: orchestrator; owns the loop and wires everything together.
 - `World`: base class you extend (the extension point).
 - `Camera`, `Renderer`, `Resources`: the pieces `Experience` composes.
-- `GridSimulation`, `ParticleSimulation`, `GPUComputationRenderer`,
-  `GPGPUGridRenderer2D`, `GPGPUParticleRenderer`: GPGPU compute helpers.
-- `CustomShaderMaterial`, `MouseTracker`, `Sizes`, `Time`, `Debug`,
-  `EventEmitter`, `DisposeScene`, `glsl`: utilities.
+- `GridSimulation`, `ParticleSimulation`, `GPUComputationRenderer`, `GPGPUGridRenderer2D`, `GPGPUParticleRenderer`: GPGPU compute helpers.
+- `CustomShaderMaterial`, `MouseTracker`, `Sizes`, `Time`, `Debug`, `EventEmitter`, `DisposeScene`, `glsl`: utilities.
 
 > Note: `Resources` loads Draco-compressed glTF using the decoder at `/draco/`.
 > Copy the Draco decoder there if you use that feature.

@@ -142,14 +142,12 @@ export default class Example extends World {
     );
   }
 
-  initialize() {}
-
-  update() {
-    super.update();
+  public override update() {
     this.simulation.update(this.camera, this.time);
   }
 
   destroy() {
+    super.destroy();
     this.simulation.destroy();
   }
 }

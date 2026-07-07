@@ -42,19 +42,21 @@ export class World {
     if (this.debug.active) {
       this.debugFolder = this.debug.getUI().addFolder("world");
     }
+  }
 
+  start() {
     if (this.resources.isReady) {
-      this.initialize();
+      this.initialize?.();
     } else {
       this.resources.on("ready", () => {
-        this.initialize();
+        this.initialize?.();
       });
     }
   }
 
-  initialize() {}
+  protected initialize?(): void;
 
-  update() {}
+  public update?(): void;
 
   opts() {
     return {

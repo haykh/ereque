@@ -16,7 +16,7 @@ import boidsPushComputeShader from "./shaders/gpgpu/boids/push.glsl";
 class Simulation extends ParticleSimulation {
   constructor(
     nparticles: number,
-    opts: SimulationOptions & { sizes: { width: number; height: number } }
+    opts: SimulationOptions & { sizes: { width: number; height: number } },
   ) {
     super(
       nparticles,
@@ -24,7 +24,7 @@ class Simulation extends ParticleSimulation {
         displayVertexShader: boidsDisplayVertexShader,
         displayFragmentShader: boidsDisplayFragmentShader,
       },
-      opts
+      opts,
     );
 
     const parameters = {
@@ -95,7 +95,7 @@ class Simulation extends ParticleSimulation {
         uCohesionFactor: new Uniform(parameters.cohesionFactor),
         uTurnFactor: new Uniform(parameters.uTurnFactor),
         uSpeedMinMax: new Uniform(parameters.speedMinMax),
-      }
+      },
     );
     this.gpgpu.addComputeShader(
       "position_update",
@@ -104,7 +104,7 @@ class Simulation extends ParticleSimulation {
       ["Positions", "Velocities"],
       {
         uTimestep: new Uniform(parameters.timestep),
-      }
+      },
     );
 
     this.particleRenderer.addDisplayVariable("Positions");
@@ -156,14 +156,12 @@ export default class Example extends World {
     });
   }
 
-  initialize() {}
-
-  update() {
-    super.update();
+  public override update() {
     this.simulation.update(this.camera, this.time);
   }
 
   destroy() {
+    super.destroy();
     this.simulation.destroy();
   }
 }

@@ -1,26 +1,6 @@
-# ereque
+# ereque (երեք)
 
-A tiny, extensible [Three.js](https://threejs.org/) engine. It owns the boring
-parts — canvas, render loop, camera + orbit controls, resizing, asset loading,
-a debug GUI, and a GPGPU compute layer — and lets you drop in your own scene by
-subclassing `World`. A handful of example scenes ship with it under
-`ereque/examples/*` (like `three/examples/jsm`).
-
-```
-ereque/
-  package.json          the library
-  tsconfig.json         type-check config
-  tsconfig.build.json   declaration emit (dist/)
-  vite.config.ts        library build (build) + dev playground (serve)
-  index.html            dev playground entry
-  dev/                  dev-only playground (not published)
-    main.ts  style.css
-  src/                  library source (published as dist/)
-    index.ts            public API
-    Experience.ts  World.ts  Camera.ts  Renderer.ts  ...
-    GPGPU/  Utils/
-    examples/           Example1..4 + shaders  ->  ereque/examples/*
-```
+A tiny, extensible [Three.js](https://threejs.org/) wrapper with a convenient GPGPU support.
 
 ## Develop
 
@@ -39,8 +19,7 @@ npm run lint
 
 ## Use it
 
-`three` is a peer dependency — install the version you want. The package is ESM
-and meant to be consumed through a bundler (Vite, webpack, Rollup, …).
+`three` is a peer dependency -- install the version you want. The package is ESM and meant to be consumed through a bundler (Vite, webpack, Rollup, ...).
 
 ```ts
 import { Experience, World } from "ereque";
@@ -52,12 +31,11 @@ class MyWorld extends World {
   }
 
   // Runs once resources are ready (immediately when there are none).
-  initialize() {
+  protected override initialize() {
     // build meshes and add them to this.scene; read this.camera / this.renderer
   }
 
-  update() {
-    super.update();
+  public override update() {
     // per-frame logic using this.time
   }
 
@@ -70,7 +48,7 @@ class MyWorld extends World {
 new Experience(document.querySelector("canvas.webgl"), { World: MyWorld });
 ```
 
-…or run a bundled example directly:
+...or run a bundled example directly:
 
 ```ts
 import { Experience } from "ereque";
@@ -100,32 +78,25 @@ new Experience(canvas, { World: MyWorld, sources });
 
 Append `#debug` to the URL to enable the lil-gui debug panel.
 
-## Install without publishing
-
-Build first (`npm run build`), then in another project:
+## Install & use
 
 ```sh
-# a) tarball — behaves exactly like a real npm install
-npm pack                                   # -> ereque-0.1.0.tgz
-#   then, in your app:
-npm install /abs/path/to/ereque-0.1.0.tgz three
-
-# b) local path (symlink; good for iterating — re-run `npm run build` after edits)
-npm install /abs/path/to/ereque three
-#   add resolve.dedupe: ["three"] to your app's vite config to avoid duplicate three
+# 1. pack from within this root (produces tar.gz):
+npm run build
+npm pack 
+# 2. use in other project:
+npm install /abs/path/to/ereque-<VERSION>.tgz three
 ```
-
-To publish for real later: `npm publish`.
 
 ## Exports
 
-- `Experience` — orchestrator; owns the loop and wires everything together.
-- `World` — base class you extend (the extension point).
-- `Camera`, `Renderer`, `Resources` — the pieces `Experience` composes.
+- `Experience`: orchestrator; owns the loop and wires everything together.
+- `World`: base class you extend (the extension point).
+- `Camera`, `Renderer`, `Resources`: the pieces `Experience` composes.
 - `GridSimulation`, `ParticleSimulation`, `GPUComputationRenderer`,
-  `GPGPUGridRenderer2D`, `GPGPUParticleRenderer` — GPGPU compute helpers.
+  `GPGPUGridRenderer2D`, `GPGPUParticleRenderer`: GPGPU compute helpers.
 - `CustomShaderMaterial`, `MouseTracker`, `Sizes`, `Time`, `Debug`,
-  `EventEmitter`, `DisposeScene`, `glsl` — utilities.
+  `EventEmitter`, `DisposeScene`, `glsl`: utilities.
 
 > Note: `Resources` loads Draco-compressed glTF using the decoder at `/draco/`.
 > Copy the Draco decoder there if you use that feature.

@@ -16,7 +16,7 @@ import nbodyPushComputeShader from "./shaders/gpgpu/nbody/push.glsl";
 class Simulation extends ParticleSimulation {
   constructor(
     nparticles: number,
-    opts: SimulationOptions & { sizes: { width: number; height: number } }
+    opts: SimulationOptions & { sizes: { width: number; height: number } },
   ) {
     super(
       nparticles,
@@ -24,7 +24,7 @@ class Simulation extends ParticleSimulation {
         displayVertexShader: nbodyDisplayVertexShader,
         displayFragmentShader: nbodyDisplayFragmentShader,
       },
-      opts
+      opts,
     );
 
     const parameters = {
@@ -45,7 +45,7 @@ class Simulation extends ParticleSimulation {
       {
         uNparticles: new Uniform(nparticles),
         uTimestep: new Uniform(parameters.timestep),
-      }
+      },
     );
     this.gpgpu.addComputeShader(
       "position_update",
@@ -54,7 +54,7 @@ class Simulation extends ParticleSimulation {
       ["PositionsMasses", "Velocities"],
       {
         uTimestep: new Uniform(parameters.timestep),
-      }
+      },
     );
 
     this.particleRenderer.addDisplayVariable("PositionsMasses");
@@ -79,14 +79,14 @@ class Simulation extends ParticleSimulation {
       initVelocities.image.data![index * 4 + 2] = velocity.z;
       initVelocities.image.data![index * 4 + 3] = 0;
     };
-    
+
     const totalMomentum = new Vector3(0, 0, 0);
     let totalMass = 0.0;
     for (let i = 0; i < nparticles; i++) {
       const randomPos = new Vector3(
         (Math.random() - 0.5) * 2,
         (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2
+        (Math.random() - 0.5) * 2,
       );
       const randomMass = Math.random() * 5 + 1.0;
       setPosition(i, randomPos);
@@ -95,7 +95,7 @@ class Simulation extends ParticleSimulation {
       const randomVel = new Vector3(
         (Math.random() - 0.5) * 100,
         (Math.random() - 0.5) * 100,
-        (Math.random() - 0.5) * 100
+        (Math.random() - 0.5) * 100,
       );
       setVelocity(i, randomVel);
       totalMass += randomMass;
@@ -105,9 +105,12 @@ class Simulation extends ParticleSimulation {
       const vx = initVelocities.image.data![i * 4 + 0];
       const vy = initVelocities.image.data![i * 4 + 1];
       const vz = initVelocities.image.data![i * 4 + 2];
-      initVelocities.image.data![i * 4 + 0] = vx - totalMomentum.x / nparticles / totalMass;
-      initVelocities.image.data![i * 4 + 1] = vy - totalMomentum.y / nparticles / totalMass;
-      initVelocities.image.data![i * 4 + 2] = vz - totalMomentum.z / nparticles / totalMass;
+      initVelocities.image.data![i * 4 + 0] =
+        vx - totalMomentum.x / nparticles / totalMass;
+      initVelocities.image.data![i * 4 + 1] =
+        vy - totalMomentum.y / nparticles / totalMass;
+      initVelocities.image.data![i * 4 + 2] =
+        vz - totalMomentum.z / nparticles / totalMass;
     }
     for (let i = 0; i < nparticles; i++) {
       const vx = initVelocities.image.data![i * 4 + 0];
@@ -159,21 +162,24 @@ class Simulation extends ParticleSimulation {
           const dy = yi - yj;
           const dz = zi - zj;
           const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) + 1e-10;
-          totalPotentialEnergy -= mass * mj / distance;
+          totalPotentialEnergy -= (mass * mj) / distance;
         }
       }
       const totalEnergy = totalKineticEnergy + totalPotentialEnergy;
       console.log(
         `Total Energy: Kinetic = ${totalKineticEnergy.toFixed(
-          4
+          4,
         )}, Potential = ${totalPotentialEnergy.toFixed(
-          4
-        )}, Total = ${totalEnergy.toFixed(4)}`
+          4,
+        )}, Total = ${totalEnergy.toFixed(4)}`,
       );
     };
     computeTotalEnergy();
 
-    this.init({ PositionsMasses: initPositionsMasses, Velocities: initVelocities });
+    this.init({
+      PositionsMasses: initPositionsMasses,
+      Velocities: initVelocities,
+    });
   }
 
   update(_: Camera, time: { elapsedSec: number }) {
@@ -201,14 +207,12 @@ export default class Example extends World {
     });
   }
 
-  initialize() {}
-
-  update() {
-    super.update();
+  public override update() {
     this.simulation.update(this.camera, this.time);
   }
 
   destroy() {
+    super.destroy();
     this.simulation.destroy();
   }
 }

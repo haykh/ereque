@@ -16,7 +16,7 @@ export default class Example extends World {
     super(opts);
   }
 
-  initialize() {
+  protected override initialize() {
     this.shader_material = new CustomShaderMaterial("shader material", {
       vertexShader,
       fragmentShader,
@@ -29,12 +29,12 @@ export default class Example extends World {
     this.scene.add(sphere);
   }
 
-  update() {
-    super.update();
+  public override update() {
     this.shader_material?.update(this.time);
   }
 
   destroy() {
+    super.destroy();
     this.shader_material?.destroy();
   }
 }

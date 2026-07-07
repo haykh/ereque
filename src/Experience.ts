@@ -64,6 +64,8 @@ export default class Experience {
     this.renderer = new Renderer(this.opts());
     this.world = new WorldClass(this.opts());
 
+    this.world.start();
+
     this.sizes.on("resize", () => {
       this.resize();
     });
@@ -93,7 +95,7 @@ export default class Experience {
   update() {
     this.camera.update();
     this.renderer.update();
-    this.world.update();
+    this.world.update?.();
     this.stats.update();
   }
 

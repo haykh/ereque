@@ -1,10 +1,8 @@
 import type { Camera } from "three";
 import { Uniform, Vector2 } from "three";
-import { World } from "../World";
-import type { WorldOptions } from "../World";
-import { GridSimulation } from "../GPGPU/Simulation";
-import type { SimulationOptions } from "../GPGPU/Simulation";
-import MouseTracker from "../Utils/MouseTracker";
+
+import { World, GridSimulation, MouseTracker } from "ereque";
+import type { WorldOptions, SimulationOptions } from "ereque";
 
 /*
  * Example maxwell solver with GPGPU grid solver

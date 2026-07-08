@@ -1,9 +1,8 @@
 import type { Camera } from "three";
 import { Uniform, Vector2 } from "three";
-import { World } from "../World";
-import type { WorldOptions } from "../World";
-import { ParticleSimulation } from "../GPGPU/Simulation";
-import type { SimulationOptions } from "../GPGPU/Simulation";
+
+import { World, ParticleSimulation } from "ereque";
+import type { WorldOptions, SimulationOptions } from "ereque";
 
 /*
  * Example with GPGPU particle solver implementing Boids algorithm

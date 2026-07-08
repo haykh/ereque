@@ -1,10 +1,8 @@
 import type { Camera } from "three";
 import { Uniform } from "three";
-import { World } from "../World";
-import type { WorldOptions } from "../World";
-import { GridSimulation } from "../GPGPU/Simulation";
-import type { SimulationOptions } from "../GPGPU/Simulation";
-import MouseTracker from "../Utils/MouseTracker";
+
+import type { WorldOptions, SimulationOptions } from "ereque";
+import { World, GridSimulation, MouseTracker } from "ereque";
 
 /*
  * Example heat diffusion with GPGPU grid solver

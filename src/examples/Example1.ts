@@ -1,7 +1,7 @@
 import { Mesh, SphereGeometry } from "three";
-import { World } from "../World";
-import type { WorldOptions } from "../World";
-import CustomShaderMaterial from "../Utils/CustomShaderMaterial";
+
+import type { WorldOptions } from "ereque";
+import {World, CustomShaderMaterial} from "ereque";
 
 /*
  * Example with custom shader material

@@ -1,3 +1,4 @@
+import type { GLSLVersion } from "three";
 import { ShaderMaterial, Uniform, Color } from "three";
 import { type GUI } from "three/addons/libs/lil-gui.module.min.js";
 
@@ -10,6 +11,7 @@ interface CustomShaderMaterialOptions {
     height: number;
     pixelResolution: { x: number; y: number };
   };
+  glslVersion?: GLSLVersion;
 }
 
 export default class CustomShaderMaterial {
@@ -39,6 +41,9 @@ export default class CustomShaderMaterial {
         uResolution: new Uniform(this.sizes.pixelResolution),
       },
     });
+    if (opts.glslVersion) {
+      this.instance.glslVersion = opts.glslVersion;
+    }
   }
 
   addUniform(

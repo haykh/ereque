@@ -62,7 +62,7 @@ export class CustomRendererPipeline
 
     this.traceMaterial.addUniform("uTriangles", null, false);
     this.traceMaterial.addUniform("uNumTriangles", 0, false);
-    this.traceMaterial.addUniform("uTrianglesWidth", 1, false);
+    this.traceMaterial.addUniform("uTexWidth", 1, false);
   }
 
   private buildTriangles(): void {
@@ -85,8 +85,10 @@ export class CustomRendererPipeline
     });
 
     const numVerts = flat.length / 3; // = 3 * numTriangles
-    const width = Math.max(1, numVerts); // 1 texel per vertex, single row
-    const data = new Float32Array(width * 4); // RGBA float; xyz in rgb
+    const wrap_width = 2048;
+    const height = Math.max(1, Math.ceil(numVerts / wrap_width));
+
+    const data = new Float32Array(wrap_width * height * 4); // RGBA float; xyz in rgb
     for (let i = 0; i < numVerts; i++) {
       data[i * 4 + 0] = flat[i * 3 + 0];
       data[i * 4 + 1] = flat[i * 3 + 1];
@@ -94,7 +96,14 @@ export class CustomRendererPipeline
       data[i * 4 + 3] = 1.0;
     }
 
-    const tex = new DataTexture(data, width, 1, RGBAFormat, FloatType);
+    const tex = new DataTexture(
+      data,
+      wrap_width,
+      height,
+      RGBAFormat,
+      FloatType,
+    );
+
     tex.magFilter = NearestFilter;
     tex.minFilter = NearestFilter;
     tex.needsUpdate = true;
@@ -105,7 +114,7 @@ export class CustomRendererPipeline
     const u = this.traceMaterial.instance.uniforms;
     u.uTriangles.value = tex;
     u.uNumTriangles.value = Math.floor(numVerts / 3);
-    u.uTrianglesWidth.value = width;
+    u.uTexWidth.value = wrap_width;
   }
 
   protected markForRebuild(): void {

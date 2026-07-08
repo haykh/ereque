@@ -1,4 +1,5 @@
 import {
+  GLSL3,
   WebGLRenderTarget,
   NearestFilter,
   Matrix4,
@@ -25,7 +26,6 @@ export default class ProgressiveAccumulator {
   private renderer: RendererPipelineOptions["renderer"];
   private sizes: ProgressiveAccumulatorOptions["sizes"];
   private camera: ProgressiveAccumulatorOptions["camera"];
-  
 
   protected targets: [WebGLRenderTarget, WebGLRenderTarget];
   protected readIdx = 0;
@@ -60,6 +60,7 @@ export default class ProgressiveAccumulator {
       ...opts,
       vertexShader: opts.vertexShader ?? ACCUMULATOR_VERTEX_SHADER,
       fragmentShader: traceFragment,
+      glslVersion: GLSL3,
     });
 
     this.traceMaterial.addUniform(
@@ -86,6 +87,7 @@ export default class ProgressiveAccumulator {
       vertexShader: opts.vertexShader ?? ACCUMULATOR_VERTEX_SHADER,
       fragmentShader:
         opts.displayFragmentShader ?? DEFAULT_DISPLAY_FRAGMENT_SHADER,
+      glslVersion: GLSL3,
     });
     this.displayMaterial.addUniform("uAccum", null, false);
 
@@ -150,33 +152,40 @@ export default class ProgressiveAccumulator {
 }
 
 export const ACCUMULATOR_VERTEX_SHADER = glsl`
-varying vec2 vUv;
+out vec2 vUv;
+
 void main() {
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
 const PREAMBLE = glsl`
-uniform float uTime;
-uniform vec2  uResolution;
-uniform vec3  uCameraPosition;
-uniform mat4  uCameraWorldMatrix;
-uniform mat4  uProjectionMatrixInverse;
+uniform float     uTime;
+uniform vec2      uResolution;
+uniform vec3      uCameraPosition;
+uniform mat4      uCameraWorldMatrix;
+uniform mat4      uProjectionMatrixInverse;
 uniform sampler2D uPrevAccum;
-uniform float uFrame;
-varying vec2 vUv;
+uniform float     uFrame;
+
+in  vec2 vUv;
+out vec4 fragColor;
 
 struct Ray { vec3 origin; vec3 dir; };
 
-// cheap float RNG (GLSL1). Swap for a uint PCG once you move to GLSL3.
-float rand(inout float s) {
-  s = fract(sin(s * 12.9898 + 78.233) * 43758.5453);
-  return s;
+uint pcg(inout uint state) {
+  state = state * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
+}
+float rand(inout uint state) { 
+  return float(pcg(state)) / 4294967295.0; 
 }
 
 Ray cameraRay(vec2 uv) {
   vec2 ndc = uv * 2.0 - 1.0;
-  vec4 vp = uProjectionMatrixInverse * vec4(ndc, 1.0, 1.0); vp /= vp.w;
+  vec4 vp = uProjectionMatrixInverse * vec4(ndc, 1.0, 1.0); 
+  vp /= vp.w;
   Ray r;
   r.origin = uCameraPosition;
   r.dir = normalize((uCameraWorldMatrix * vec4(vp.xyz, 0.0)).xyz);
@@ -185,14 +194,16 @@ Ray cameraRay(vec2 uv) {
 
 const MAIN = glsl`
 void main() {
-  float seed = dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + uFrame * 0.0618;
-  vec2 jitter = vec2(rand(seed), rand(seed)) - 0.5;
+  uvec2 p = uvec2(gl_FragCoord.xy);
+  uint rng = (p.x * 1973u + p.y * 9277u + uint(uFrame) * 26699u) | 1u;
+
+  vec2 jitter = vec2(rand(rng), rand(rng)) - 0.5;
   vec2 uv = (gl_FragCoord.xy + jitter) / uResolution;
 
-  vec3 sampled = sampleRadiance(cameraRay(uv), seed);
+  vec3 sampled = sampleRadiance(cameraRay(uv), rng);
 
-  vec3 prev = texture2D(uPrevAccum, vUv).rgb;
-  gl_FragColor = vec4(mix(prev, sampled, 1.0 / uFrame), 1.0);
+  vec3 prev = texture(uPrevAccum, vUv).rgb;
+  fragColor = vec4(mix(prev, sampled, 1.0 / uFrame), 1.0);
 }`;
 
 export function buildTraceFragmentShader(sceneShader: string): string {
@@ -201,10 +212,13 @@ export function buildTraceFragmentShader(sceneShader: string): string {
 
 export const DEFAULT_DISPLAY_FRAGMENT_SHADER = glsl`
 uniform sampler2D uAccum;
-varying vec2 vUv;
+
+in  vec2 vUv;
+out vec4 fragColor;
+
 void main() {
-  vec3 c = texture2D(uAccum, vUv).rgb;
+  vec3 c = texture(uAccum, vUv).rgb;
   c = c / (c + 1.0);            // Reinhard tone map (HDR -> LDR)
   c = pow(c, vec3(1.0 / 2.2));  // linear -> sRGB
-  gl_FragColor = vec4(c, 1.0);
+  fragColor = vec4(c, 1.0);
 }`;

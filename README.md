@@ -57,7 +57,19 @@ class MyWorld extends World {
 new Experience(document.querySelector("canvas.webgl"), { World: MyWorld });
 ```
 
-...or run a bundled example directly:
+Optionally, you can provide your own renderer which implements `RendererPipeline` (see Example6):
+
+```ts
+import type { RendererPipeline } from "ereque";
+class CustomRendererPipeline implements RendererPipeline { /* ... */ }
+
+new Experience(document.querySelector("canvas.webgl"), {
+  World: MyWorld,
+  pipeline: (o) => new CustomRendererPipeline(o),
+});
+```
+
+You may also just run a bundled example directly:
 
 ```ts
 import { Experience } from "ereque";
@@ -72,6 +84,7 @@ new Experience(document.querySelector("canvas.webgl"), { World: Example3 });
 - `Example3`: GPGPU boids (flocking) particles
 - `Example4`: GPGPU n-body gravity particles
 - `Example5`: GPGPU FDTD maxwell solver
+- `Example6`: Custom pathtracing renderer implementation
 
 Preload assets with `sources`; they resolve on `this.resources.items` before `initialize()` runs:
 

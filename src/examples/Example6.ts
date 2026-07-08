@@ -1,5 +1,6 @@
 import {
   Mesh,
+  BoxGeometry,
   IcosahedronGeometry,
   MeshBasicMaterial,
   FloatType,
@@ -30,17 +31,36 @@ export default class Example extends World {
   }
 
   protected override initialize() {
-    const mesh = new Mesh(
-      new IcosahedronGeometry(1, 1),
+    const sphere = new Mesh(
+      new IcosahedronGeometry(1, 3),
       new MeshBasicMaterial(),
     );
-    this.scene.add(mesh);
+    sphere.position.y = 1.0; // resting on the floor
+    this.scene.add(sphere);
+
+    const floor = new Mesh(
+      new BoxGeometry(12, 0.1, 12),
+      new MeshBasicMaterial(),
+    );
+    this.scene.add(floor);
   }
 
   public override update() {}
 
   destroy() {
     super.destroy();
+    for (const child of this.scene.children) {
+      if (child instanceof Mesh) {
+        child.geometry.dispose();
+        if (Array.isArray(child.material)) {
+          for (const mat of child.material) {
+            mat.dispose();
+          }
+        } else {
+          child.material.dispose();
+        }
+      }
+    }
   }
 }
 

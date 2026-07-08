@@ -3,6 +3,8 @@
     "esbenp.prettier-vscode",
     "xaver.clang-format",
     "slevesque.shader",
-    "ms-vscode.vscode-typescript-next"
+    "ms-vscode.vscode-typescript-next",
+    "dtoplak.vscode-glsllint",
+    "remitafforeau.glsl-complete-support"
   ]
 }

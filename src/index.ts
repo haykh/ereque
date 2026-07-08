@@ -35,6 +35,13 @@ export type {
   RendererPipelineOptions,
   RendererPipelineFactory,
 } from "./Utils/RendererPipeline";
+export {
+  default as ProgressiveAccumulator,
+  buildTraceFragmentShader,
+  ACCUMULATOR_VERTEX_SHADER,
+  DEFAULT_DISPLAY_FRAGMENT_SHADER,
+} from "./CustomRendering/ProgressiveAccumulator";
+export type { ProgressiveAccumulatorOptions } from "./CustomRendering/ProgressiveAccumulator";
 
 // Asset loading
 export { default as Resources } from "./Utils/Resources";

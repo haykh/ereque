@@ -1,10 +1,17 @@
 import type { Scene, Camera, WebGLRenderer } from "three";
+import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 export interface RendererPipelineOptions {
   renderer: WebGLRenderer;
-  sizes: { width: number; height: number; pixelRatio: number };
+  sizes: {
+    width: number;
+    height: number;
+    pixelRatio: number;
+    pixelResolution: { x: number; y: number };
+  };
   scene: Scene;
   camera: Camera;
+  debug: { active: boolean; getUI: () => GUI };
 }
 
 export interface RendererPipeline {
@@ -19,7 +26,7 @@ export type RendererPipelineFactory<
 
 export default class DefaultRendererPipeline implements RendererPipeline {
   private renderer: WebGLRenderer;
-  private sizes: { width: number; height: number; pixelRatio: number };
+  private sizes: RendererPipelineOptions["sizes"];
   private scene: Scene;
   private camera: Camera;
 

@@ -10,11 +10,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "ereque": ["src/index.ts"],
-      "ereque/examples": ["src/examples/index.ts"],
-      "ereque/examples/*": ["src/examples/*"]
+      "ereque": ["./src/index.ts"],
+      "ereque/examples": ["./src/examples/index.ts"],
+      "ereque/examples/*": ["./src/examples/*"]
     }
   },
   "include": ["src", "dev"]

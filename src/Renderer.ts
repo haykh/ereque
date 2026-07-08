@@ -1,14 +1,16 @@
 import type { Scene, Camera } from "three";
-import type {
-  RendererPipeline,
-  RendererPipelineFactory,
-} from "./Utils/RendererPipeline";
 import { WebGLRenderer, Color } from "three";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
+import type {
+  RendererPipeline,
+  RendererPipelineOptions,
+  RendererPipelineFactory,
+} from "./Utils/RendererPipeline";
+
 interface RendererOptions<P extends RendererPipeline> {
   canvas: HTMLCanvasElement;
-  sizes: { width: number; height: number; pixelRatio: number };
+  sizes: RendererPipelineOptions["sizes"];
   scene: Scene;
   camera: { instance: Camera };
   debug: { active: boolean; getUI: () => GUI };
@@ -16,15 +18,14 @@ interface RendererOptions<P extends RendererPipeline> {
 }
 
 export default class Renderer<P extends RendererPipeline = RendererPipeline> {
-  public instance: WebGLRenderer;
-  public debugFolder: GUI | null = null;
-
   private canvas: HTMLCanvasElement;
-  public readonly pipeline: P;
-
   private params = {
     clearColor: "#1a1a1a",
   };
+
+  public instance: WebGLRenderer;
+  public readonly pipeline: P;
+  public readonly debugFolder: GUI | null = null;
 
   constructor(opts: RendererOptions<P>) {
     this.canvas = opts.canvas;
@@ -35,9 +36,8 @@ export default class Renderer<P extends RendererPipeline = RendererPipeline> {
     this.instance.setClearColor(this.params.clearColor);
 
     this.pipeline = opts.pipeline({
+      ...opts,
       renderer: this.instance,
-      sizes: opts.sizes,
-      scene: opts.scene,
       camera: opts.camera.instance,
     });
 

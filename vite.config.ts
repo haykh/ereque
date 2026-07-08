@@ -36,11 +36,9 @@ export default defineConfig(({ command }) => {
     };
   }
 
-  // Dev playground (`npm run dev`): resolve "ereque" and its subpaths to the
-  // source so dev/main.ts imports the library exactly like an external consumer
-  // would, with live HMR.
   return {
     plugins: [glsl()],
+    dedupe: ["three"],
     resolve: {
       alias: [
         { find: /^ereque$/, replacement: `${srcDir}/index.ts` },

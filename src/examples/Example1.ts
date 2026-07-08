@@ -6,8 +6,8 @@ import {World, CustomShaderMaterial} from "ereque";
 /*
  * Example with custom shader material
  */
-import vertexShader from "./shaders/shader.vert";
-import fragmentShader from "./shaders/shader.frag";
+import vertexShader from "./shaders/example1/shader.vert";
+import fragmentShader from "./shaders/example1/shader.frag";
 
 export default class Example extends World {
   public shader_material: CustomShaderMaterial | null = null;

@@ -96,7 +96,7 @@ export default class ProgressiveAccumulator {
     this.displayQuad = new FullScreenQuad(this.displayMaterial.instance);
   }
 
-  protected markForRebuild(): void {
+  protected markForRedraw(): void {
     this.frame = 1;
   }
 
@@ -138,7 +138,7 @@ export default class ProgressiveAccumulator {
     this.targets.forEach((t) =>
       t.setSize(Math.floor(res.x), Math.floor(res.y)),
     );
-    this.markForRebuild();
+    this.markForRedraw();
   }
 
   destroy(): void {

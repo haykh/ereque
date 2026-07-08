@@ -1,15 +1,17 @@
 import {
   Mesh,
+  BufferGeometry,
   BoxGeometry,
   IcosahedronGeometry,
   MeshBasicMaterial,
-  FloatType,
-  NearestFilter,
-  Vector3,
-  DataTexture,
-  RGBAFormat,
 } from "three";
-import type { BufferGeometry } from "three";
+import {
+  MeshBVH,
+  MeshBVHUniformStruct,
+  shaderStructs,
+  shaderIntersectFunction,
+} from "three-mesh-bvh";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
 import { World, ProgressiveAccumulator } from "ereque";
@@ -19,7 +21,7 @@ import type {
   RendererPipelineOptions,
 } from "ereque";
 
-import sceneShader from "./shaders/renderer/custom/scene.glsl";
+import sceneShaderBody from "./shaders/renderer/custom/scene.glsl";
 
 /*
  * Example with custom renderer pipeline
@@ -35,7 +37,7 @@ export default class Example extends World {
       new IcosahedronGeometry(1, 3),
       new MeshBasicMaterial(),
     );
-    sphere.position.y = 1.0; // resting on the floor
+    sphere.position.y = 1.0;
     this.scene.add(sphere);
 
     const floor = new Mesh(
@@ -70,83 +72,58 @@ export class CustomRendererPipeline
 {
   private scene: RendererPipelineOptions["scene"];
 
-  // mesh triangulation
-  private trianglesBuilt = false;
-  private triangleTexture: DataTexture | null = null;
+  private bvhBuilt = false;
 
   public readonly debugFolder: GUI | null = null;
 
   constructor(opts: RendererPipelineOptions) {
+    const sceneShader = `
+      precision highp isampler2D;
+      precision highp usampler2D;
+      ${shaderStructs}
+      ${shaderIntersectFunction}
+      ${sceneShaderBody}
+    `;
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
 
-    this.traceMaterial.addUniform("uTriangles", null, false);
-    this.traceMaterial.addUniform("uNumTriangles", 0, false);
-    this.traceMaterial.addUniform("uTexWidth", 1, false);
+    this.traceMaterial.addUniform("bvh", new MeshBVHUniformStruct(), false);
   }
 
-  private buildTriangles(): void {
+  private buildBVH(): void {
     this.scene.updateMatrixWorld(true);
-    const flat: number[] = [];
-    const v = new Vector3();
+    const geoms: BufferGeometry[] = [];
 
     this.scene.traverse((obj) => {
       const mesh = obj as Mesh;
-      if (!mesh.isMesh) return; // skip camera, lights, etc.
-      const geom = mesh.geometry as BufferGeometry;
-      const pos = geom.getAttribute("position");
-      const index = geom.getIndex();
-      const count = index ? index.count : pos.count; // vertices to emit (mult. of 3)
-      for (let i = 0; i < count; i++) {
-        const vi = index ? index.getX(i) : i;
-        v.fromBufferAttribute(pos, vi).applyMatrix4(mesh.matrixWorld);
-        flat.push(v.x, v.y, v.z);
-      }
+      if (!mesh.isMesh) return;
+      const g = mesh.geometry.clone();
+      g.applyMatrix4(mesh.matrixWorld); // bake into world space
+      const ni = g.index ? g.toNonIndexed() : g; // normalize for merging
+      const posOnly = new BufferGeometry(); // position-only -> always mergeable
+      posOnly.setAttribute("position", ni.getAttribute("position").clone());
+      geoms.push(posOnly);
     });
+    if (geoms.length === 0) return;
 
-    const numVerts = flat.length / 3; // = 3 * numTriangles
-    const wrap_width = 2048;
-    const height = Math.max(1, Math.ceil(numVerts / wrap_width));
+    const merged = mergeGeometries(geoms); // one world-space geometry
+    const bvh = new MeshBVH(merged); // MeshBVH adds/reorders the index for you
 
-    const data = new Float32Array(wrap_width * height * 4); // RGBA float; xyz in rgb
-    for (let i = 0; i < numVerts; i++) {
-      data[i * 4 + 0] = flat[i * 3 + 0];
-      data[i * 4 + 1] = flat[i * 3 + 1];
-      data[i * 4 + 2] = flat[i * 3 + 2];
-      data[i * 4 + 3] = 1.0;
-    }
-
-    const tex = new DataTexture(
-      data,
-      wrap_width,
-      height,
-      RGBAFormat,
-      FloatType,
-    );
-
-    tex.magFilter = NearestFilter;
-    tex.minFilter = NearestFilter;
-    tex.needsUpdate = true;
-
-    this.triangleTexture?.dispose();
-    this.triangleTexture = tex;
-
-    const u = this.traceMaterial.instance.uniforms;
-    u.uTriangles.value = tex;
-    u.uNumTriangles.value = Math.floor(numVerts / 3);
-    u.uTexWidth.value = wrap_width;
+    (
+      this.traceMaterial.instance.uniforms.bvh.value as MeshBVHUniformStruct
+    ).updateFrom(bvh);
   }
 
-  protected markForRebuild(): void {
-    super.markForRebuild();
-    this.trianglesBuilt = false;
+  protected markGeometryForRebuild(): void {
+    this.bvhBuilt = false;
+    super.markForRedraw();
   }
 
   render(time?: { elapsedSec: number }): void {
-    if (!this.trianglesBuilt) {
-      this.buildTriangles();
-      this.trianglesBuilt = true;
-      this.frame = 1;
+    if (!this.bvhBuilt) {
+      this.buildBVH();
+      this.bvhBuilt = true;
+      super.markForRedraw();
     }
     super.render(time);
   }
@@ -156,7 +133,9 @@ export class CustomRendererPipeline
   }
 
   destroy(): void {
-    this.triangleTexture?.dispose();
+    (
+      this.traceMaterial.instance.uniforms.bvh.value as MeshBVHUniformStruct
+    ).dispose();
 
     super.destroy();
   }

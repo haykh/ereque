@@ -28,6 +28,14 @@ export type { WorldOptions } from "./World";
 export { default as Camera } from "./Camera";
 export { default as Renderer } from "./Renderer";
 
+// Custom renderer pipeline
+export { default as DefaultRendererPipeline } from "./Utils/RendererPipeline";
+export type {
+  RendererPipeline,
+  RendererPipelineOptions,
+  RendererPipelineFactory,
+} from "./Utils/RendererPipeline";
+
 // Asset loading
 export { default as Resources } from "./Utils/Resources";
 export type { Source, SourceList, SourceType } from "./sources";

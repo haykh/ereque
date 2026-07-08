@@ -12,6 +12,8 @@ import DisposeScene from "./Utils/Dispose";
 import { World } from "./World";
 import type { WorldOptions } from "./World";
 import type { SourceList } from "./sources";
+import DefaultRendererPipeline from "./Utils/RendererPipeline";
+import type { RendererPipelineFactory } from "./Utils/RendererPipeline";
 
 /** Constructor of a user-supplied {@link World} implementation. */
 export interface WorldConstructor {
@@ -19,12 +21,8 @@ export interface WorldConstructor {
 }
 
 export interface ExperienceConfig {
-  /**
-   * The World implementation to run. Supply your own subclass of {@link World};
-   * defaults to the empty base `World` when omitted.
-   */
   World?: WorldConstructor;
-  /** Assets to preload before the World is initialized. Defaults to none. */
+  pipeline?: RendererPipelineFactory;
   sources?: SourceList;
 }
 
@@ -61,7 +59,12 @@ export default class Experience {
     this.scene = new Scene();
     this.resources = new Resources(sources);
     this.camera = new Camera(this.opts());
-    this.renderer = new Renderer(this.opts());
+
+    this.renderer = new Renderer({
+      ...this.opts(),
+      pipeline: config.pipeline ?? ((o) => new DefaultRendererPipeline(o)),
+    });
+
     this.world = new WorldClass(this.opts());
 
     this.world.start();
@@ -94,7 +97,7 @@ export default class Experience {
 
   update() {
     this.camera.update();
-    this.renderer.update();
+    this.renderer.update(this.time);
     this.world.update?.();
     this.stats.update();
   }

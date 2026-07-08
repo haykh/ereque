@@ -1,46 +1,49 @@
 import type { Scene, Camera } from "three";
+import type {
+  RendererPipeline,
+  RendererPipelineFactory,
+} from "./Utils/RendererPipeline";
 import { WebGLRenderer, Color } from "three";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
-interface RendererOptions {
+interface RendererOptions<P extends RendererPipeline> {
   canvas: HTMLCanvasElement;
   sizes: { width: number; height: number; pixelRatio: number };
   scene: Scene;
   camera: { instance: Camera };
   debug: { active: boolean; getUI: () => GUI };
+  pipeline: RendererPipelineFactory<P>;
 }
 
-export default class Renderer {
-  private canvas: HTMLCanvasElement;
-  private sizes: { width: number; height: number; pixelRatio: number };
-  private scene: Scene;
-  private camera: Camera;
-
+export default class Renderer<P extends RendererPipeline = RendererPipeline> {
   public instance: WebGLRenderer;
   public debugFolder: GUI | null = null;
+
+  private canvas: HTMLCanvasElement;
+  public readonly pipeline: P;
 
   private params = {
     clearColor: "#1a1a1a",
   };
 
-  constructor(opts: RendererOptions) {
+  constructor(opts: RendererOptions<P>) {
     this.canvas = opts.canvas;
-    this.sizes = opts.sizes;
-    this.scene = opts.scene;
-    this.camera = opts.camera.instance;
-    if (opts.debug.active) {
-      this.debugFolder = opts.debug.getUI().addFolder("renderer");
-    }
-
     this.instance = new WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
     });
-    // this.instance.toneMapping = THREE.CineonToneMapping;
-    // this.instance.toneMappingExposure = 1.75;
-    // this.instance.shadowMap.enabled = true;
-    // this.instance.shadowMap.type = THREE.PCFSoftShadowMap;
     this.instance.setClearColor(this.params.clearColor);
+
+    this.pipeline = opts.pipeline({
+      renderer: this.instance,
+      sizes: opts.sizes,
+      scene: opts.scene,
+      camera: opts.camera.instance,
+    });
+
+    if (opts.debug.active) {
+      this.debugFolder = opts.debug.getUI().addFolder("renderer");
+    }
 
     this.debugFolder
       ?.addColor(this.params, "clearColor")
@@ -58,15 +61,16 @@ export default class Renderer {
   }
 
   resize() {
-    this.instance.setSize(this.sizes.width, this.sizes.height);
-    this.instance.setPixelRatio(this.sizes.pixelRatio);
+    this.pipeline.resize?.();
   }
 
-  update() {
-    this.instance.render(this.scene, this.camera);
+  update(time: { elapsedSec: number; deltaSec: number }) {
+    this.pipeline.render(time);
   }
 
   destroy() {
+    this.debugFolder?.destroy();
+    this.pipeline.destroy?.();
     this.instance.dispose();
   }
 }

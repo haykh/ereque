@@ -5,7 +5,7 @@ import { type GUI } from "three/addons/libs/lil-gui.module.min.js";
 interface CustomShaderMaterialOptions {
   vertexShader: string;
   fragmentShader: string;
-  debug: { active: boolean; getUI: () => GUI };
+  debug?: { active: boolean; getUI: () => GUI };
   sizes: {
     width: number;
     height: number;
@@ -29,7 +29,7 @@ export default class CustomShaderMaterial {
   constructor(label: string, opts: CustomShaderMaterialOptions) {
     this.label = label;
     this.sizes = opts.sizes;
-    if (opts.debug.active) {
+    if (opts.debug?.active) {
       this.debugFolder = opts.debug.getUI().addFolder(this.label);
     }
 

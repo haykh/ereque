@@ -1,11 +1,11 @@
-vec3 pointLight(float lightIntensity,
-                float specularPower,
-                float lightFalloff,
-                vec3  lightColor,
-                vec3  lightPosition,
-                vec3  normal,
-                vec3  viewDirection,
-                vec3  fragmentPosition) {
+vec3 pointLight(in float lightIntensity,
+                in float specularPower,
+                in float lightFalloff,
+                in vec3  lightColor,
+                in vec3  lightPosition,
+                in vec3  normal,
+                in vec3  viewDirection,
+                in vec3  fragmentPosition) {
   vec3  lightDelta     = lightPosition - fragmentPosition;
   vec3  lightDirection = normalize(lightDelta);
   float falloff        = max(0.0, 1.0 - length(lightDelta) * lightFalloff);

@@ -1,3 +1,3 @@
-vec3 ambientLight(float lightIntensity, vec3 lightColor) {
+vec3 ambientLight(in float lightIntensity, in vec3 lightColor) {
   return lightColor * lightIntensity;
 }

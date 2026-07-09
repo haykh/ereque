@@ -40,8 +40,8 @@ export {
   buildTraceFragmentShader,
   ACCUMULATOR_VERTEX_SHADER,
   DEFAULT_DISPLAY_FRAGMENT_SHADER,
-} from "./CustomRendering/ProgressiveAccumulator";
-export type { ProgressiveAccumulatorOptions } from "./CustomRendering/ProgressiveAccumulator";
+} from "./RenderPipelines/ProgressiveAccumulator";
+export type { ProgressiveAccumulatorOptions } from "./RenderPipelines/ProgressiveAccumulator";
 
 // Asset loading
 export { default as Resources } from "./Utils/Resources";
@@ -72,6 +72,18 @@ export {
   ShaderHookAfter,
   Capitalize,
 } from "./Utils/Snippets";
+
+// Utils for custom rendering pipelines
+export {
+  default as BVHScene,
+  prependBVHScenePreamble,
+} from "./RenderPipelines/Utils/BVHScene";
+export type { BVHSceneOptions } from "./RenderPipelines/Utils/BVHScene";
+export {
+  default as CustomShaderLights,
+  prependCustomShaderLightsPreamble,
+} from "./RenderPipelines/Utils/CustomShaderLights";
+export type { CustomShaderLightsOptions } from "./RenderPipelines/Utils/CustomShaderLights";
 
 // GLSL tagged-template helper (for inline shader source with editor highlighting)
 export { glsl } from "./glsl";

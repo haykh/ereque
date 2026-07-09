@@ -1,20 +1,22 @@
 import {
   Mesh,
-  BufferGeometry,
+  DirectionalLight,
   BoxGeometry,
   IcosahedronGeometry,
   MeshBasicMaterial,
+  PointLight,
+  AmbientLight,
 } from "three";
-import {
-  MeshBVH,
-  MeshBVHUniformStruct,
-  shaderStructs,
-  shaderIntersectFunction,
-} from "three-mesh-bvh";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
-import { World, ProgressiveAccumulator } from "ereque";
+import {
+  World,
+  ProgressiveAccumulator,
+  BVHScene,
+  prependBVHScenePreamble,
+  CustomShaderLights,
+  prependCustomShaderLightsPreamble,
+} from "ereque";
 import type {
   WorldOptions,
   RendererPipeline,
@@ -30,6 +32,18 @@ import sceneShaderBody from "./shaders/renderer/custom/scene.glsl";
 export default class Example extends World {
   constructor(opts: WorldOptions) {
     super(opts);
+    opts.camera.controls.enableDamping = false;
+
+    const key = new DirectionalLight(0xff0000, 1.0);
+    key.position.set(5, 8, 3);
+    this.scene.add(key);
+
+    const point = new PointLight(0x00ff00, 1.0);
+    point.position.set(-5, 8, -3);
+    this.scene.add(point);
+
+    const ambient = new AmbientLight(0x0000ff, 0.5);
+    this.scene.add(ambient);
   }
 
   protected override initialize() {
@@ -71,58 +85,32 @@ export class CustomRendererPipeline
   implements RendererPipeline
 {
   private scene: RendererPipelineOptions["scene"];
-
-  private bvhBuilt = false;
+  private bvh_scene: BVHScene;
+  private lights: CustomShaderLights;
 
   public readonly debugFolder: GUI | null = null;
 
   constructor(opts: RendererPipelineOptions) {
-    const sceneShader = `
-      precision highp isampler2D;
-      precision highp usampler2D;
-      ${shaderStructs}
-      ${shaderIntersectFunction}
-      ${sceneShaderBody}
-    `;
+    const sceneShader = prependBVHScenePreamble(
+      prependCustomShaderLightsPreamble(sceneShaderBody),
+    );
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
-
-    this.traceMaterial.addUniform("bvh", new MeshBVHUniformStruct(), false);
-  }
-
-  private buildBVH(): void {
-    this.scene.updateMatrixWorld(true);
-    const geoms: BufferGeometry[] = [];
-
-    this.scene.traverse((obj) => {
-      const mesh = obj as Mesh;
-      if (!mesh.isMesh) return;
-      const g = mesh.geometry.clone();
-      g.applyMatrix4(mesh.matrixWorld); // bake into world space
-      const ni = g.index ? g.toNonIndexed() : g; // normalize for merging
-      const posOnly = new BufferGeometry(); // position-only -> always mergeable
-      posOnly.setAttribute("position", ni.getAttribute("position").clone());
-      geoms.push(posOnly);
+    this.bvh_scene = new BVHScene({
+      scene: this.scene,
+      traceMaterial: this.traceMaterial,
     });
-    if (geoms.length === 0) return;
-
-    const merged = mergeGeometries(geoms); // one world-space geometry
-    const bvh = new MeshBVH(merged); // MeshBVH adds/reorders the index for you
-
-    (
-      this.traceMaterial.instance.uniforms.bvh.value as MeshBVHUniformStruct
-    ).updateFrom(bvh);
-  }
-
-  protected markGeometryForRebuild(): void {
-    this.bvhBuilt = false;
-    super.markForRedraw();
+    this.lights = new CustomShaderLights({
+      scene: this.scene,
+      traceMaterial: this.traceMaterial,
+    });
   }
 
   render(time?: { elapsedSec: number }): void {
-    if (!this.bvhBuilt) {
-      this.buildBVH();
-      this.bvhBuilt = true;
+    if (
+      this.bvh_scene.rebuildIfNecessary() ||
+      this.lights.rebuildIfNecessary()
+    ) {
       super.markForRedraw();
     }
     super.render(time);
@@ -133,10 +121,7 @@ export class CustomRendererPipeline
   }
 
   destroy(): void {
-    (
-      this.traceMaterial.instance.uniforms.bvh.value as MeshBVHUniformStruct
-    ).dispose();
-
+    this.bvh_scene.destroy();
     super.destroy();
   }
 }

@@ -5,27 +5,30 @@ import {
   Matrix4,
   HalfFloatType,
 } from "three";
+import type { WebGLRenderer, Camera } from "three";
 import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
 
 import { glsl } from "../glsl";
-import { RendererPipelineOptions } from "../Utils/RendererPipeline";
+import {
+  RendererPipeline,
+  RendererPipelineOptions,
+} from "../Utils/RendererPipeline";
 import CustomShaderMaterial from "../Utils/CustomShaderMaterial";
 
 export interface ProgressiveAccumulatorOptions {
-  renderer: RendererPipelineOptions["renderer"];
+  renderer: WebGLRenderer;
   sizes: RendererPipelineOptions["sizes"];
-  camera: RendererPipelineOptions["camera"];
-  debug: RendererPipelineOptions["debug"];
+  camera: Camera;
   sceneShader: string; // defines `vec3 sampleRadiance(Ray, inout float)` + scene uniforms
   fragmentShader?: string; // escape hatch: full trace fragment, bypasses sceneShader
   vertexShader?: string; // default: ACCUMULATOR_VERTEX_SHADER
   displayFragmentShader?: string; // default: DEFAULT_DISPLAY_FRAGMENT_SHADER
 }
 
-export default class ProgressiveAccumulator {
-  private renderer: RendererPipelineOptions["renderer"];
+export default class ProgressiveAccumulator implements RendererPipeline {
+  private renderer: WebGLRenderer;
   private sizes: ProgressiveAccumulatorOptions["sizes"];
-  private camera: ProgressiveAccumulatorOptions["camera"];
+  private camera: Camera;
 
   protected targets: [WebGLRenderTarget, WebGLRenderTarget];
   protected readIdx = 0;
@@ -57,7 +60,7 @@ export default class ProgressiveAccumulator {
     const traceFragment =
       opts.fragmentShader ?? buildTraceFragmentShader(opts.sceneShader);
     this.traceMaterial = new CustomShaderMaterial("trace material", {
-      ...opts,
+      sizes: this.sizes,
       vertexShader: opts.vertexShader ?? ACCUMULATOR_VERTEX_SHADER,
       fragmentShader: traceFragment,
       glslVersion: GLSL3,
@@ -83,7 +86,7 @@ export default class ProgressiveAccumulator {
 
     // display material
     this.displayMaterial = new CustomShaderMaterial("display material", {
-      ...opts,
+      sizes: this.sizes,
       vertexShader: opts.vertexShader ?? ACCUMULATOR_VERTEX_SHADER,
       fragmentShader:
         opts.displayFragmentShader ?? DEFAULT_DISPLAY_FRAGMENT_SHADER,
@@ -171,13 +174,17 @@ uniform float     uFrame;
 in  vec2 vUv;
 out vec4 fragColor;
 
-struct Ray { vec3 origin; vec3 dir; };
+struct Ray { 
+  vec3 origin; 
+  vec3 dir; 
+};
 
 uint pcg(inout uint state) {
   state = state * 747796405u + 2891336453u;
   uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
   return (word >> 22u) ^ word;
 }
+  
 float rand(inout uint state) { 
   return float(pcg(state)) / 4294967295.0; 
 }
@@ -200,7 +207,8 @@ void main() {
   vec2 jitter = vec2(rand(rng), rand(rng)) - 0.5;
   vec2 uv = (gl_FragCoord.xy + jitter) / uResolution;
 
-  vec3 sampled = sampleRadiance(cameraRay(uv), rng);
+  Ray ray = cameraRay(uv);
+  vec3 sampled = sampleRadiance(ray.origin, ray.dir, rng);
 
   vec3 prev = texture(uPrevAccum, vUv).rgb;
   fragColor = vec4(mix(prev, sampled, 1.0 / uFrame), 1.0);

@@ -124,6 +124,7 @@ export class CustomRendererPipeline
       .merge(CustomShaderLights.ShaderChunk())
       .withPostamble(sceneShaderBody)
       .render();
+    console.log(sceneShader);
 
     super({ ...opts, sceneShader });
     this.scene = opts.scene;

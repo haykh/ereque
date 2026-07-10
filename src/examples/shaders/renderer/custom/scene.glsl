@@ -1,8 +1,7 @@
 const int MAX_BOUNCES = 6;
 
 vec3 skyColor(vec3 dir) {
-  return vec3(0.0);
-  // return mix(vec3(0.8, 0.8, 0.9), vec3(0.2, 0.3, 0.7), dir.y * 0.5 + 0.5) * 1.6;
+  return mix(vec3(0.8, 0.8, 0.9), vec3(0.2, 0.3, 0.7), dir.y * 0.5 + 0.5) * 1.6;
 }
 
 vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {

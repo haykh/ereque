@@ -179,7 +179,7 @@ export default class BVHScene {
     ];
 
     return new GLSLShaderChunk(uniforms, [], structs, functions)
-      .withPreamble(bvhPreambleShader)
+      .addPreamble(bvhPreambleShader)
       .bake({ shaderStructs, shaderIntersectFunction });
   }
 }

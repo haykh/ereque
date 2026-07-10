@@ -79,6 +79,18 @@ export class GLSLUniform {
       ? `uniform ${this.type} ${this.name};`
       : `uniform ${this.type} ${this.name}[${this.count}];`;
   }
+
+  public static from(raw: string): GLSLUniform {
+    const match = raw.trim().match(/^(\w+)\s+(\w+)(?:\[(\d+)\])?$/);
+    if (!match) {
+      throw new Error(
+        `Invalid GLSLUniform string format: ${raw}. Expected format: "type name" or "type name[count]".`,
+      );
+    }
+    const [, type, name, countStr] = match;
+    const count = countStr ? parseInt(countStr) : undefined;
+    return new GLSLUniform(type, name, count);
+  }
 }
 
 export class GLSLVariable {
@@ -89,6 +101,20 @@ export class GLSLVariable {
 
   public definition(): string {
     return `${this.type} ${this.name};`;
+  }
+
+  public static from(raw: string): GLSLVariable {
+    const parts = raw.trim().split(/\s+/);
+    if (parts.length !== 2) {
+      throw new Error(
+        `Invalid GLSLVariable string format: ${raw}. Expected format: "type name".`,
+      );
+    }
+    return new GLSLVariable(parts[0], parts[1]);
+  }
+
+  public asUniform(): GLSLUniform {
+    return new GLSLUniform(this.type, this.name);
   }
 }
 
@@ -269,45 +295,34 @@ export class GLSLShaderChunk {
       .join("\n\n");
   }
 
+  public addUniform(
+    uniform: GLSLUniform | GLSLVariable | string,
+  ): GLSLShaderChunk {
+    if (typeof uniform === "string") {
+      this.uniforms.push(GLSLUniform.from(uniform));
+    } else if (uniform instanceof GLSLVariable) {
+      this.uniforms.push(uniform.asUniform());
+    } else {
+      this.uniforms.push(uniform);
+    }
+    return this;
+  }
+
   public bake(context: Record<string, string> = {}): GLSLShaderChunk {
-    return new GLSLShaderChunk(
-      this.uniforms,
-      this.macros,
-      this.structs,
-      this.functions.map((func) => func.bake(context)),
-      this.raw_preamble.bake(context),
-      this.raw_postamble.bake(context),
-    );
+    this.functions = this.functions.map((func) => func.bake(context));
+    this.raw_preamble = this.raw_preamble.bake(context);
+    this.raw_postamble = this.raw_postamble.bake(context);
+    return this;
   }
 
-  public addPreamble(lines: GLSLRawChunk) {
+  public addPreamble(lines: GLSLRawChunk): GLSLShaderChunk {
     this.raw_preamble = this.raw_preamble.merge(lines);
+    return this;
   }
 
-  public addPostamble(lines: GLSLRawChunk) {
+  public addPostamble(lines: GLSLRawChunk): GLSLShaderChunk {
     this.raw_postamble = this.raw_postamble.merge(lines);
-  }
-
-  public withPreamble(lines: GLSLRawChunk): GLSLShaderChunk {
-    return new GLSLShaderChunk(
-      this.uniforms,
-      this.macros,
-      this.structs,
-      this.functions,
-      this.raw_preamble.merge(lines),
-      this.raw_postamble,
-    );
-  }
-
-  public withPostamble(lines: GLSLRawChunk): GLSLShaderChunk {
-    return new GLSLShaderChunk(
-      this.uniforms,
-      this.macros,
-      this.structs,
-      this.functions,
-      this.raw_preamble,
-      this.raw_postamble.merge(lines),
-    );
+    return this;
   }
 
   public merge(other: GLSLShaderChunk): GLSLShaderChunk {

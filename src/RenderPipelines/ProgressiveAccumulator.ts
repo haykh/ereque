@@ -26,9 +26,9 @@ export interface ProgressiveAccumulatorOptions {
 }
 
 export default class ProgressiveAccumulator implements RendererPipeline {
-  private renderer: WebGLRenderer;
-  private sizes: ProgressiveAccumulatorOptions["sizes"];
-  private camera: Camera;
+  protected renderer: WebGLRenderer;
+  protected sizes: ProgressiveAccumulatorOptions["sizes"];
+  protected camera: Camera;
 
   protected targets: [WebGLRenderTarget, WebGLRenderTarget];
   protected readIdx = 0;

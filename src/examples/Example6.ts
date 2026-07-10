@@ -1,5 +1,6 @@
 import {
   Mesh,
+  Color,
   DirectionalLight,
   BoxGeometry,
   IcosahedronGeometry,
@@ -47,6 +48,7 @@ export default class Example extends World {
     );
     sphere.position.y = 1.0;
     this.scene.add(sphere);
+    this.renderer.setClearColor("#f2f2f2");
 
     const mirrorMat = new MeshStandardMaterial({ color: 0xffffff });
     mirrorMat.userData.model = "mirror";
@@ -122,9 +124,9 @@ export class CustomRendererPipeline
     const sceneShader = BVHScene.ShaderChunk()
       .merge(MaterialLibrary.ShaderChunk(models))
       .merge(CustomShaderLights.ShaderChunk())
-      .withPostamble(sceneShaderBody)
+      .addPostamble(sceneShaderBody)
+      .addUniform("vec3 uClearColor")
       .render();
-    console.log(sceneShader);
 
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
@@ -140,6 +142,11 @@ export class CustomRendererPipeline
       traceMaterial: this.traceMaterial,
       models,
     });
+    this.traceMaterial.addColorUniform(
+      "uClearColor",
+      this.renderer.getClearColor(new Color()).getHexString(),
+      false,
+    );
   }
 
   render(time?: { elapsedSec: number }): void {
@@ -151,6 +158,9 @@ export class CustomRendererPipeline
     if (bvhRebuilt || lightsRebuilt) {
       super.markForRedraw();
     }
+    this.traceMaterial.instance.uniforms.uClearColor.value.set(
+      this.renderer.getClearColor(new Color()),
+    );
     super.render(time);
   }
 

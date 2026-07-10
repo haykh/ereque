@@ -1,4 +1,5 @@
-export type SourceType = "cubeTexture" | "gltfModel" | "texture" | "hdrTexture";
+export type SourceType =
+  "cubeTexture" | "gltfModel" | "texture" | "hdrTexture" | "exrTexture";
 
 export type Source = {
   name: string;

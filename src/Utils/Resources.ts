@@ -7,6 +7,7 @@ import {
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
+import { EXRLoader } from "three/addons/loaders/EXRLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import EventEmitter from "./EventEmitter";
@@ -16,6 +17,7 @@ interface Loaders {
   textureLoader: TextureLoader;
   cubeTextureLoader: CubeTextureLoader;
   hdrLoader: HDRLoader;
+  exrLoader: EXRLoader;
   dracoLoader: DRACOLoader;
   gltfLoader: GLTFLoader;
 }
@@ -42,6 +44,7 @@ export default class Resources extends EventEmitter {
       textureLoader: new TextureLoader(),
       cubeTextureLoader: new CubeTextureLoader(),
       hdrLoader: new HDRLoader(),
+      exrLoader: new EXRLoader(),
       dracoLoader: new DRACOLoader(),
       gltfLoader: new GLTFLoader(),
     };
@@ -62,7 +65,7 @@ export default class Resources extends EventEmitter {
   startLoading() {
     const onProgress = (name: string) => (progress: ProgressEvent) => {
       console.log(
-        `Loading asset ${name}: ${Math.round((100 * progress.loaded) / progress.total)}%`
+        `Loading asset ${name}: ${Math.round((100 * progress.loaded) / progress.total)}%`,
       );
     };
     const onError = (name: string) => (err: unknown) => {
@@ -82,7 +85,7 @@ export default class Resources extends EventEmitter {
             this.sourceLoaded(source, file);
           },
           onProgress(name),
-          onError(name)
+          onError(name),
         );
       } else if (type === "cubeTexture") {
         this.loaders.cubeTextureLoader.load(
@@ -91,7 +94,7 @@ export default class Resources extends EventEmitter {
             this.sourceLoaded(source, file);
           },
           onProgress(name),
-          onError(name)
+          onError(name),
         );
       } else if (type === "hdrTexture") {
         if (paths.length === 0) {
@@ -103,7 +106,19 @@ export default class Resources extends EventEmitter {
             this.sourceLoaded(source, file);
           },
           onProgress(name),
-          onError(name)
+          onError(name),
+        );
+      } else if (type === "exrTexture") {
+        if (paths.length === 0) {
+          throw new Error(`No path provided for the ${name} source`);
+        }
+        this.loaders.exrLoader.load(
+          paths[0],
+          (file) => {
+            this.sourceLoaded(source, file);
+          },
+          onProgress(name),
+          onError(name),
         );
       } else if (type === "gltfModel") {
         if (paths.length === 0) {
@@ -115,7 +130,7 @@ export default class Resources extends EventEmitter {
             this.sourceLoaded(source, file);
           },
           onProgress(name),
-          onError(name)
+          onError(name),
         );
       }
     });

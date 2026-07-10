@@ -28,6 +28,7 @@ import bvhPreambleShader from "./shaders/bvh_preamble.glsl";
 export interface BVHSceneOptions {
   scene: Scene;
   traceMaterial: CustomShaderMaterial;
+  packNormals?: boolean;
 }
 
 /**
@@ -36,7 +37,7 @@ export interface BVHSceneOptions {
  *
  * Shader provides:
  *
- * - `Hit` struct with `hit`, `t`, `pos`, `n`, and `materialId` fields
+ * - `Hit` struct with `hit`, `t`, `pos`, `n`, `ng`, and `materialId` fields
  * - `Hit intersectScene(origin, dir)` returns the first intersection of a ray with the scene
  * - `bool occluded(origin, dir, maxDist)` returns true if the ray is occluded by any geometry in the scene within `maxDist`
  */
@@ -44,17 +45,20 @@ export default class BVHScene {
   private scene: Scene;
   private traceMaterial: CustomShaderMaterial;
 
-  private materialIndexTexture: DataTexture | null = null;
+  private vertexPayloadTexture: DataTexture | null = null;
   private materialList: Array<Material> = [];
+
+  private packNormals: boolean;
 
   private dirty = true;
 
   constructor(opts: BVHSceneOptions) {
     this.scene = opts.scene;
     this.traceMaterial = opts.traceMaterial;
+    this.packNormals = opts.packNormals ?? true;
 
     this.traceMaterial.addUniform("bvh", new MeshBVHUniformStruct(), false);
-    this.traceMaterial.addUniform("uMaterialIndex", null, false);
+    this.traceMaterial.addUniform("uVertexPayload", null, false);
   }
 
   public build(): void {
@@ -69,10 +73,16 @@ export default class BVHScene {
         return;
       }
       const g = mesh.geometry.clone();
-      g.applyMatrix4(mesh.matrixWorld); // bake into world space
-      const ni = g.index ? g.toNonIndexed() : g; // normalize for merging
-      const posOnly = new BufferGeometry(); // position-only -> always mergeable
+      g.applyMatrix4(mesh.matrixWorld);
+      if (this.packNormals && !g.getAttribute("normal")) {
+        g.computeVertexNormals();
+      }
+      const ni = g.index ? g.toNonIndexed() : g;
+      const posOnly = new BufferGeometry();
       posOnly.setAttribute("position", ni.getAttribute("position").clone());
+      if (this.packNormals) {
+        posOnly.setAttribute("normal", ni.getAttribute("normal").clone());
+      }
       geoms.push(posOnly);
 
       let id = idOf.get(mesh.material as Material);
@@ -89,25 +99,36 @@ export default class BVHScene {
     if (geoms.length === 0) {
       return;
     }
+    const merged = mergeGeometries(geoms);
+
+    // build material index & normals texture
     const N = matIds.length;
     const W = 2048;
     const H = Math.max(1, Math.ceil(N / W));
     const data = new Float32Array(W * H * 4);
-    for (let i = 0; i < N; i++) data[i * 4] = matIds[i]; // id in .r
-    const idxTex = new DataTexture(data, W, H, RGBAFormat, FloatType);
-    idxTex.magFilter = idxTex.minFilter = NearestFilter;
-    idxTex.needsUpdate = true;
 
-    this.materialIndexTexture?.dispose();
-    this.materialIndexTexture = idxTex;
+    const nAttr = this.packNormals ? merged.getAttribute("normal") : null;
 
+    for (let i = 0; i < N; i++) {
+      if (this.packNormals) {
+        data[i * 4 + 0] = nAttr!.getX(i);
+        data[i * 4 + 1] = nAttr!.getY(i);
+        data[i * 4 + 2] = nAttr!.getZ(i);
+      }
+      data[i * 4 + 3] = matIds[i]; // material id in .a
+    }
+    const vertexPayloadTex = new DataTexture(data, W, H, RGBAFormat, FloatType);
+    vertexPayloadTex.magFilter = vertexPayloadTex.minFilter = NearestFilter;
+    vertexPayloadTex.needsUpdate = true;
+
+    this.vertexPayloadTexture?.dispose();
+    this.vertexPayloadTexture = vertexPayloadTex;
+
+    // update shader uniforms
     const u = this.traceMaterial.instance.uniforms;
-    u.uMaterialIndex.value = idxTex;
+    u.uVertexPayload.value = this.vertexPayloadTexture;
 
-    const merged = mergeGeometries(geoms); // one world-space geometry
-    const bvh = new MeshBVH(merged); // MeshBVH adds/reorders the index for you
-
-    (u.bvh.value as MeshBVHUniformStruct).updateFrom(bvh);
+    (u.bvh.value as MeshBVHUniformStruct).updateFrom(new MeshBVH(merged));
   }
 
   public getMaterials(): Array<Material> {
@@ -134,13 +155,13 @@ export default class BVHScene {
   public destroy(): void {
     const u = this.traceMaterial.instance.uniforms;
     (u.bvh.value as MeshBVHUniformStruct).dispose();
-    this.materialIndexTexture?.dispose();
+    this.vertexPayloadTexture?.dispose();
   }
 
-  public static ShaderChunk(): GLSLShaderChunk {
+  public static ShaderChunk(smooth_shading?: boolean): GLSLShaderChunk {
     const uniforms = [
       new GLSLUniform("BVH", "bvh"),
-      new GLSLUniform("sampler2D", "uMaterialIndex"),
+      new GLSLUniform("sampler2D", "uVertexPayload"),
     ];
 
     const structs = [
@@ -149,6 +170,7 @@ export default class BVHScene {
         "float t",
         "vec3 pos",
         "vec3 n",
+        "vec3 ng",
         "int materialId",
       ]),
     ];
@@ -167,8 +189,20 @@ export default class BVHScene {
           "if (h.hit) {",
           "  h.t          = dist;",
           "  h.pos        = origin + dist * dir;",
-          "  h.n          = faceNormal;",
-          "  h.materialId = int(texelFetch1D(uMaterialIndex, faceIndices.x).r + 0.5);",
+          "  vec3 ng = normalize(faceNormal);",
+          "  if (dot(ng, dir) > 0.0) ng = -ng;",
+          "  h.ng = ng;",
+          ...((smooth_shading ?? true)
+            ? [
+                "  vec3 n0 = texelFetch1D(uVertexPayload, faceIndices.x).xyz;",
+                "  vec3 n1 = texelFetch1D(uVertexPayload, faceIndices.y).xyz;",
+                "  vec3 n2 = texelFetch1D(uVertexPayload, faceIndices.z).xyz;",
+                "  vec3 ns = normalize(bary.x * n0 + bary.y * n1 + bary.z * n2);",
+                "  if (dot(ns, ng) < 0.0) ns = -ns;",
+                "  h.n = ns;",
+              ]
+            : ["  h.n = ng;"]),
+          "  h.materialId = int(texelFetch1D(uVertexPayload, faceIndices.x).a + 0.5);",
           "}",
           "return h;",
         ],

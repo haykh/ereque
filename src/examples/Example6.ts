@@ -24,7 +24,7 @@ import type {
   RendererPipelineOptions,
 } from "ereque";
 
-import sceneShaderBody from "./shaders/renderer/custom/scene.glsl";
+import sceneShaderBody from "./shaders/example6/scene.glsl";
 
 /*
  * Example with custom renderer pipeline
@@ -121,7 +121,7 @@ export class CustomRendererPipeline
       },
     ];
 
-    const sceneShader = BVHScene.ShaderChunk()
+    const sceneShader = BVHScene.ShaderChunk(false)
       .merge(MaterialLibrary.ShaderChunk(models))
       .merge(CustomShaderLights.ShaderChunk())
       .addPostamble(sceneShaderBody)
@@ -133,6 +133,7 @@ export class CustomRendererPipeline
     this.bvh_scene = new BVHScene({
       scene: this.scene,
       traceMaterial: this.traceMaterial,
+      packNormals: false,
     });
     this.lights = new CustomShaderLights({
       scene: this.scene,

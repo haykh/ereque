@@ -2,7 +2,6 @@ const int MAX_BOUNCES = 10;
 
 vec3 skyColor(vec3 dir) {
   return uClearColor;
-  // return mix(vec3(0.8, 0.8, 0.9), vec3(0.2, 0.3, 0.7), dir.y * 0.5 + 0.5) * 1.6;
 }
 
 vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
@@ -17,24 +16,19 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
       break;
     }
 
-    vec3 n = h.n;
-    if (dot(n, rayDirCurrent) > 0.0) {
-      n = -n;
-    }
-
     Material mat = getMaterial(h.materialId);
     vec3     wo  = -rayDirCurrent;
     vec3     wi, weight, emission;
-    bool     cont = scatter(mat, h.pos, n, wo, rng, wi, weight, emission);
+    bool     cont = scatter(mat, h.pos, h.n, wo, rng, wi, weight, emission);
 
     radiance += throughput * emission;
-    radiance += throughput * directLighting(mat, h.pos, n, wo);
+    radiance += throughput * directLighting(mat, h.pos, h.n, h.ng, wo);
 
     if (!cont) {
       break;
     }
     throughput       *= weight;
-    rayOriginCurrent  = h.pos + n * 1e-3;
+    rayOriginCurrent  = h.pos + sign(dot(wi, h.ng)) * h.ng * 1e-3;
     rayDirCurrent     = wi;
   }
 

@@ -200,10 +200,10 @@ export default class CustomShaderLights {
     const directLighting = new GLSLFunction(
       "vec3",
       "directLighting",
-      ["in Material mat", "in vec3 pos", "in vec3 n", "in vec3 wo"],
+      ["in Material mat", "in vec3 pos", "in vec3 n", "in vec3 ng", "in vec3 wo"],
       [
         `vec3 sum = ${evalBSDF.call(["mat", "n", "wo", "n"])} * ambientLight(uAmbientLightIntensity, uAmbientLightColor);`,
-        `vec3 o = pos + n * 1e-3;`,
+        `vec3 o = pos + ng * 1e-3;`,
         `for (int i = 0; i < uDirectionalLightsNumber; i++) {`,
         `  vec3 wi = uDirectionalLightsTo[i];`,
         `  if (!${occluded.call(["o", "wi", "INFINITY"])} ) {`,

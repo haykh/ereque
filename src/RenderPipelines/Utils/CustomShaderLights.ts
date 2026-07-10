@@ -10,6 +10,7 @@ import {
 import { GLSLEvalBSDFContract, GLSLOccludedContract } from "./ShaderContracts";
 
 import lightsShaders from "./shaders/lights.glsl";
+import { SceneLightSignature } from "../../Utils/SceneSignatures";
 
 const MAX_LIGHTS = 64;
 
@@ -52,6 +53,7 @@ export default class CustomShaderLights {
     };
   };
 
+  private lastSceneLightSignature: string = "";
   private dirty = true;
 
   constructor(opts: CustomShaderLightsOptions) {
@@ -97,8 +99,7 @@ export default class CustomShaderLights {
     }
   }
 
-  public build(): void {
-    this.scene.updateMatrixWorld(true);
+  private build(): void {
     this.lights.directional.number = 0;
     this.lights.point.number = 0;
     this.lights.ambient.intensity = 0.0;
@@ -172,12 +173,15 @@ export default class CustomShaderLights {
   }
 
   public rebuildIfNecessary(): boolean {
-    if (this.dirty) {
-      this.build();
-      this.dirty = false;
-      return true;
+    this.scene.updateMatrixWorld(true);
+    const sig = SceneLightSignature(this.scene);
+    if (sig === this.lastSceneLightSignature && !this.dirty) {
+      return false;
     }
-    return false;
+    this.lastSceneLightSignature = sig;
+    this.build();
+    this.dirty = false;
+    return true;
   }
 
   public static ShaderChunk(): GLSLShaderChunk {
@@ -200,7 +204,13 @@ export default class CustomShaderLights {
     const directLighting = new GLSLFunction(
       "vec3",
       "directLighting",
-      ["in Material mat", "in vec3 pos", "in vec3 n", "in vec3 ng", "in vec3 wo"],
+      [
+        "in Material mat",
+        "in vec3 pos",
+        "in vec3 n",
+        "in vec3 ng",
+        "in vec3 wo",
+      ],
       [
         `vec3 sum = ${evalBSDF.call(["mat", "n", "wo", "n"])} * ambientLight(uAmbientLightIntensity, uAmbientLightColor);`,
         `vec3 o = pos + ng * 1e-3;`,

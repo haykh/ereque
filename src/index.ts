@@ -68,6 +68,10 @@ export { default as MouseTracker } from "./Utils/MouseTracker";
 export { default as DisposeScene } from "./Utils/Dispose";
 export { default as Debug, DebugCanvas, DebugQuad } from "./Utils/Debug";
 export {
+  SceneMeshSignature,
+  SceneLightSignature,
+} from "./Utils/SceneSignatures";
+export {
   EnableCastReceiveShadows,
   ShaderHookAfter,
   Capitalize,

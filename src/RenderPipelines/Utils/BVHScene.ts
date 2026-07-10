@@ -1,5 +1,6 @@
 import type { Scene, Mesh, Material } from "three";
 import {
+  BufferAttribute,
   BufferGeometry,
   DataTexture,
   RGBAFormat,
@@ -24,6 +25,7 @@ import {
 import { GLSLOccludedContract } from "./ShaderContracts";
 
 import bvhPreambleShader from "./shaders/bvh_preamble.glsl";
+import { SceneMeshSignature } from "../../Utils/SceneSignatures";
 
 export interface BVHSceneOptions {
   scene: Scene;
@@ -37,9 +39,24 @@ export interface BVHSceneOptions {
  *
  * Shader provides:
  *
- * - `Hit` struct with `hit`, `t`, `pos`, `n`, `ng`, and `materialId` fields
- * - `Hit intersectScene(origin, dir)` returns the first intersection of a ray with the scene
- * - `bool occluded(origin, dir, maxDist)` returns true if the ray is occluded by any geometry in the scene within `maxDist`
+ * - `struct Hit`
+ *   * `bool isHit`: whether the ray hit any geometry
+ *   * `float distance`: distance from ray origin to intersection point
+ *   * `vec3 position`: world-space position of the intersection
+ *   * `vec3 smoothNormal`: interpolated normal at the intersection point
+ *   * `vec3 geometricNormal`: face normal of the intersected triangle
+ *   * `int materialId`: index of the material associated with the intersected geometry
+ *
+ * - `Hit intersectScene(origin, dir)`
+ *   * `vec3 origin`: ray origin in world space
+ *   * `vec3 dir`: ray direction in world space
+ *   * returns the first intersection of a ray with the scene
+ *
+ * - `bool occluded(origin, dir, maxDist)`
+ *   * `vec3 origin`: ray origin in world space
+ *   * `vec3 dir`: ray direction in world space
+ *   * `float maxDist`: maximum distance to check for occlusion
+ *   * returns true if the ray is occluded by any geometry in the scene within `maxDist`
  */
 export default class BVHScene {
   private scene: Scene;
@@ -50,6 +67,7 @@ export default class BVHScene {
 
   private packNormals: boolean;
 
+  private lastSceneMeshSignature: string = "";
   private dirty = true;
 
   constructor(opts: BVHSceneOptions) {
@@ -59,13 +77,15 @@ export default class BVHScene {
 
     this.traceMaterial.addUniform("bvh", new MeshBVHUniformStruct(), false);
     this.traceMaterial.addUniform("uVertexPayload", null, false);
+
+    this.seedEmptyBVHScene();
   }
 
-  public build(): void {
-    this.scene.updateMatrixWorld(true);
+  private build(): void {
     const geoms: BufferGeometry[] = [];
     const matIds: number[] = [];
     const idOf = new Map<Material, number>();
+    this.materialList = [];
 
     this.scene.traverse((obj) => {
       const mesh = obj as Mesh;
@@ -97,6 +117,7 @@ export default class BVHScene {
       }
     });
     if (geoms.length === 0) {
+      this.seedEmptyBVHScene();
       return;
     }
     const merged = mergeGeometries(geoms);
@@ -143,13 +164,28 @@ export default class BVHScene {
     this.dirty = true;
   }
 
+  private seedEmptyBVHScene(): void {
+    const dummy = new BufferGeometry();
+    dummy.setAttribute("position", new BufferAttribute(new Float32Array(9), 3));
+    (
+      this.traceMaterial.instance.uniforms.bvh.value as MeshBVHUniformStruct
+    ).updateFrom(new MeshBVH(dummy));
+    this.vertexPayloadTexture?.dispose();
+    this.vertexPayloadTexture = null;
+    this.traceMaterial.instance.uniforms.uVertexPayload.value = null;
+    this.materialList = [];
+  }
+
   public rebuildIfNecessary(): boolean {
-    if (this.dirty) {
-      this.build();
-      this.dirty = false;
-      return true;
+    this.scene.updateMatrixWorld(true);
+    const sig = SceneMeshSignature(this.scene);
+    if (sig === this.lastSceneMeshSignature && !this.dirty) {
+      return false;
     }
-    return false;
+    this.lastSceneMeshSignature = sig;
+    this.build();
+    this.dirty = false;
+    return true;
   }
 
   public destroy(): void {
@@ -166,11 +202,12 @@ export default class BVHScene {
 
     const structs = [
       new GLSLStruct("Hit", [
-        "bool hit",
-        "float t",
-        "vec3 pos",
-        "vec3 n",
-        "vec3 ng",
+        "bool isHit",
+        "float distance",
+        "vec3 position",
+        "vec3 smoothNormal",
+        "vec3 geometricNormal",
+        "bool isFrontFace",
         "int materialId",
       ]),
     ];
@@ -185,23 +222,22 @@ export default class BVHScene {
           "uvec4 faceIndices;",
           "vec3  faceNormal, bary;",
           "float side, dist;",
-          "h.hit = bvhIntersectFirstHit(bvh, origin, dir, faceIndices, faceNormal, bary, side, dist);",
-          "if (h.hit) {",
-          "  h.t          = dist;",
-          "  h.pos        = origin + dist * dir;",
-          "  vec3 ng = normalize(faceNormal);",
-          "  if (dot(ng, dir) > 0.0) ng = -ng;",
-          "  h.ng = ng;",
+          "h.isHit = bvhIntersectFirstHit(bvh, origin, dir, faceIndices, faceNormal, bary, side, dist);",
+          "if (h.isHit) {",
+          "  h.distance = dist;",
+          "  h.position = origin + dist * dir;",
+          "  h.geometricNormal = normalize(faceNormal);",
+          "  h.isFrontFace = side > 0.0;",
           ...((smooth_shading ?? true)
             ? [
                 "  vec3 n0 = texelFetch1D(uVertexPayload, faceIndices.x).xyz;",
                 "  vec3 n1 = texelFetch1D(uVertexPayload, faceIndices.y).xyz;",
                 "  vec3 n2 = texelFetch1D(uVertexPayload, faceIndices.z).xyz;",
                 "  vec3 ns = normalize(bary.x * n0 + bary.y * n1 + bary.z * n2);",
-                "  if (dot(ns, ng) < 0.0) ns = -ns;",
-                "  h.n = ns;",
+                "  if (dot(ns, h.geometricNormal) < 0.0) ns = -ns;",
+                "  h.smoothNormal = ns;",
               ]
-            : ["  h.n = ng;"]),
+            : ["  h.smoothNormal = h.geometricNormal;"]),
           "  h.materialId = int(texelFetch1D(uVertexPayload, faceIndices.x).a + 0.5);",
           "}",
           "return h;",

@@ -11,7 +11,7 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
   vec3 rayDirCurrent    = rayDir;
   for (int bounce = 0; bounce < MAX_BOUNCES; bounce++) {
     Hit h = intersectScene(rayOriginCurrent, rayDirCurrent);
-    if (!h.hit) {
+    if (!h.isHit) {
       radiance += throughput * skyColor(rayDirCurrent);
       break;
     }
@@ -19,17 +19,19 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
     Material mat = getMaterial(h.materialId);
     vec3     wo  = -rayDirCurrent;
     vec3     wi, weight, emission;
-    bool     cont = scatter(mat, h.pos, h.n, wo, rng, wi, weight, emission);
+    bool cont = scatter(mat, h.position, h.smoothNormal, wo, rng, wi, weight, emission);
 
     radiance += throughput * emission;
-    radiance += throughput * directLighting(mat, h.pos, h.n, h.ng, wo);
+    radiance += throughput *
+                directLighting(mat, h.position, h.smoothNormal, h.geometricNormal, wo);
 
     if (!cont) {
       break;
     }
     throughput       *= weight;
-    rayOriginCurrent  = h.pos + sign(dot(wi, h.ng)) * h.ng * 1e-3;
-    rayDirCurrent     = wi;
+    rayOriginCurrent  = h.position + sign(dot(wi, h.geometricNormal)) *
+                                      h.geometricNormal * 1e-3;
+    rayDirCurrent = wi;
   }
 
   return radiance;

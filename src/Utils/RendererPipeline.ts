@@ -1,6 +1,8 @@
 import type { Scene, Camera, WebGLRenderer } from "three";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
 
+import type Resources from "../Utils/Resources";
+
 export interface RendererPipelineOptions {
   renderer: WebGLRenderer;
   sizes: {
@@ -11,6 +13,7 @@ export interface RendererPipelineOptions {
   };
   scene: Scene;
   camera: Camera;
+  resources: Resources;
   debug: { active: boolean; getUI: () => GUI };
 }
 

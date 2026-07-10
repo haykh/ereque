@@ -11,6 +11,7 @@ import type {
 interface RendererOptions<P extends RendererPipeline> {
   canvas: HTMLCanvasElement;
   sizes: RendererPipelineOptions["sizes"];
+  resources: RendererPipelineOptions["resources"];
   scene: Scene;
   camera: { instance: Camera };
   debug: { active: boolean; getUI: () => GUI };

@@ -3,7 +3,7 @@ import {
   DirectionalLight,
   BoxGeometry,
   IcosahedronGeometry,
-  MeshBasicMaterial,
+  MeshStandardMaterial,
   PointLight,
   AmbientLight,
 } from "three";
@@ -13,11 +13,11 @@ import {
   World,
   ProgressiveAccumulator,
   BVHScene,
-  prependBVHScenePreamble,
   CustomShaderLights,
-  prependCustomShaderLightsPreamble,
+  MaterialLibrary,
 } from "ereque";
 import type {
+  MaterialModel,
   WorldOptions,
   RendererPipeline,
   RendererPipelineOptions,
@@ -33,7 +33,35 @@ export default class Example extends World {
   constructor(opts: WorldOptions) {
     super(opts);
     opts.camera.controls.enableDamping = false;
+  }
 
+  protected override initialize() {
+    // meshes
+    const sphere = new Mesh(
+      new IcosahedronGeometry(1, 3),
+      new MeshStandardMaterial({
+        color: 0xcc4433,
+        emissive: 0xff0000,
+        emissiveIntensity: 20.0,
+      }),
+    );
+    sphere.position.y = 1.0;
+    this.scene.add(sphere);
+
+    const mirrorMat = new MeshStandardMaterial({ color: 0xffffff });
+    mirrorMat.userData.model = "mirror";
+    const ball = new Mesh(new BoxGeometry(1, 1, 1), mirrorMat);
+    ball.position.set(0, 1, -3);
+    ball.rotation.set(0, 0.2, 0);
+    this.scene.add(ball);
+
+    const floor = new Mesh(
+      new BoxGeometry(12, 0.1, 12),
+      new MeshStandardMaterial({ color: 0x222222 }),
+    );
+    this.scene.add(floor);
+
+    // lights
     const key = new DirectionalLight(0xff0000, 1.0);
     key.position.set(5, 8, 3);
     this.scene.add(key);
@@ -44,21 +72,6 @@ export default class Example extends World {
 
     const ambient = new AmbientLight(0x0000ff, 0.5);
     this.scene.add(ambient);
-  }
-
-  protected override initialize() {
-    const sphere = new Mesh(
-      new IcosahedronGeometry(1, 3),
-      new MeshBasicMaterial(),
-    );
-    sphere.position.y = 1.0;
-    this.scene.add(sphere);
-
-    const floor = new Mesh(
-      new BoxGeometry(12, 0.1, 12),
-      new MeshBasicMaterial(),
-    );
-    this.scene.add(floor);
   }
 
   public override update() {}
@@ -88,12 +101,30 @@ export class CustomRendererPipeline
   private bvh_scene: BVHScene;
   private lights: CustomShaderLights;
 
+  private materials: MaterialLibrary;
+
   public readonly debugFolder: GUI | null = null;
 
   constructor(opts: RendererPipelineOptions) {
-    const sceneShader = prependBVHScenePreamble(
-      prependCustomShaderLightsPreamble(sceneShaderBody),
-    );
+    const models: MaterialModel[] = [
+      {
+        name: "mirror",
+        scatter: [
+          "emission = vec3(0.0);",
+          "wi       = reflect(-wo, n);",
+          "weight   = mat.albedo;",
+          "return true;",
+        ],
+        eval: "return vec3(0.0);",
+      },
+    ];
+
+    const sceneShader = BVHScene.ShaderChunk()
+      .merge(MaterialLibrary.ShaderChunk(models))
+      .merge(CustomShaderLights.ShaderChunk())
+      .withPostamble(sceneShaderBody)
+      .render();
+
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
     this.bvh_scene = new BVHScene({
@@ -104,13 +135,19 @@ export class CustomRendererPipeline
       scene: this.scene,
       traceMaterial: this.traceMaterial,
     });
+    this.materials = new MaterialLibrary({
+      traceMaterial: this.traceMaterial,
+      models,
+    });
   }
 
   render(time?: { elapsedSec: number }): void {
-    if (
-      this.bvh_scene.rebuildIfNecessary() ||
-      this.lights.rebuildIfNecessary()
-    ) {
+    const bvhRebuilt = this.bvh_scene.rebuildIfNecessary();
+    if (bvhRebuilt) {
+      this.materials.build(this.bvh_scene.getMaterials());
+    }
+    const lightsRebuilt = this.lights.rebuildIfNecessary();
+    if (bvhRebuilt || lightsRebuilt) {
       super.markForRedraw();
     }
     super.render(time);
@@ -122,6 +159,7 @@ export class CustomRendererPipeline
 
   destroy(): void {
     this.bvh_scene.destroy();
+    this.materials.destroy();
     super.destroy();
   }
 }

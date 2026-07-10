@@ -59,7 +59,7 @@ export type { GPGPURendererOptions } from "./GPGPU/GPGPURenderer";
 export { GridSimulation, ParticleSimulation } from "./GPGPU/Simulation";
 export type { SimulationOptions } from "./GPGPU/Simulation";
 
-// Materials & utilities
+// Utilities
 export { default as CustomShaderMaterial } from "./Utils/CustomShaderMaterial";
 export { default as EventEmitter } from "./Utils/EventEmitter";
 export { default as Sizes } from "./Utils/Sizes";
@@ -72,18 +72,37 @@ export {
   ShaderHookAfter,
   Capitalize,
 } from "./Utils/Snippets";
+export type {
+  GLSLFunctionArgAccessor,
+  GLSLFunctionSignature,
+  GLSLFunctionBody,
+} from "./Utils/ShaderTemplate";
+export {
+  StringTemplate,
+  GLSLMacro,
+  GLSLVariable,
+  GLSLFunctionArg,
+  GLSLFunction,
+  GLSLCallable,
+  GLSLStruct,
+  GLSLContract,
+  GLSLShaderChunk,
+} from "./Utils/ShaderTemplate";
 
 // Utils for custom rendering pipelines
-export {
-  default as BVHScene,
-  prependBVHScenePreamble,
-} from "./RenderPipelines/Utils/BVHScene";
+export { default as BVHScene } from "./RenderPipelines/Utils/BVHScene";
 export type { BVHSceneOptions } from "./RenderPipelines/Utils/BVHScene";
-export {
-  default as CustomShaderLights,
-  prependCustomShaderLightsPreamble,
-} from "./RenderPipelines/Utils/CustomShaderLights";
+export { default as CustomShaderLights } from "./RenderPipelines/Utils/CustomShaderLights";
 export type { CustomShaderLightsOptions } from "./RenderPipelines/Utils/CustomShaderLights";
+export type {
+  MaterialLibraryOptions,
+  MaterialModel,
+} from "./RenderPipelines/Utils/MaterialLibrary";
+export { default as MaterialLibrary } from "./RenderPipelines/Utils/MaterialLibrary";
+export {
+  GLSLScatterContract,
+  GLSLEvalBSDFContract,
+} from "./RenderPipelines/Utils/ShaderContracts";
 
 // GLSL tagged-template helper (for inline shader source with editor highlighting)
 export { glsl } from "./glsl";

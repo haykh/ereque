@@ -2,7 +2,14 @@ import type { Scene, PointLight, DirectionalLight, AmbientLight } from "three";
 import { Vector3 } from "three";
 
 import type CustomShaderMaterial from "../../Utils/CustomShaderMaterial";
-import { glsl } from "../../glsl";
+import {
+  GLSLFunction,
+  GLSLUniform,
+  GLSLShaderChunk,
+} from "../../Utils/ShaderTemplate";
+import { GLSLEvalBSDFContract, GLSLOccludedContract } from "./ShaderContracts";
+
+import lightsShaders from "./shaders/lights.glsl";
 
 const MAX_LIGHTS = 64;
 
@@ -172,83 +179,55 @@ export default class CustomShaderLights {
     }
     return false;
   }
-}
 
-const PREAMBLE = glsl`
-// Directional lights
-uniform int   uDirectionalLightsNumber;
-uniform vec3  uDirectionalLightsTo[${MAX_LIGHTS}];
-uniform vec3  uDirectionalLightsColor[${MAX_LIGHTS}];
-uniform float uDirectionalLightsIntensity[${MAX_LIGHTS}];
+  public static ShaderChunk(): GLSLShaderChunk {
+    const uniforms = [
+      new GLSLUniform("int", "uDirectionalLightsNumber"),
+      new GLSLUniform("vec3", "uDirectionalLightsTo", MAX_LIGHTS),
+      new GLSLUniform("vec3", "uDirectionalLightsColor", MAX_LIGHTS),
+      new GLSLUniform("float", "uDirectionalLightsIntensity", MAX_LIGHTS),
+      new GLSLUniform("int", "uPointLightsNumber"),
+      new GLSLUniform("vec3", "uPointLightsPosition", MAX_LIGHTS),
+      new GLSLUniform("vec3", "uPointLightsColor", MAX_LIGHTS),
+      new GLSLUniform("float", "uPointLightsIntensity", MAX_LIGHTS),
+      new GLSLUniform("vec3", "uAmbientLightColor"),
+      new GLSLUniform("float", "uAmbientLightIntensity"),
+    ];
 
-// Point lights
-uniform int   uPointLightsNumber;
-uniform vec3  uPointLightsPosition[${MAX_LIGHTS}];
-uniform vec3  uPointLightsColor[${MAX_LIGHTS}];
-uniform float uPointLightsIntensity[${MAX_LIGHTS}];
+    const evalBSDF = GLSLEvalBSDFContract.reference("evalBSDF");
+    const occluded = GLSLOccludedContract.reference("occluded");
 
-// Ambient light
-uniform vec3  uAmbientLightColor;
-uniform float uAmbientLightIntensity;
+    const directLighting = new GLSLFunction(
+      "vec3",
+      "directLighting",
+      ["in Material mat", "in vec3 pos", "in vec3 n", "in vec3 wo"],
+      [
+        `vec3 sum = ${evalBSDF.call(["mat", "n", "wo", "n"])} * ambientLight(uAmbientLightIntensity, uAmbientLightColor);`,
+        `vec3 o = pos + n * 1e-3;`,
+        `for (int i = 0; i < uDirectionalLightsNumber; i++) {`,
+        `  vec3 wi = uDirectionalLightsTo[i];`,
+        `  if (!${occluded.call(["o", "wi", "INFINITY"])} ) {`,
+        `    sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * directionalLight(uDirectionalLightsIntensity[i], uDirectionalLightsColor[i], wi, n);`,
+        `  }`,
+        `}`,
+        `for (int i = 0; i < uPointLightsNumber; i++) {`,
+        `  vec3 d = uPointLightsPosition[i] - pos;`,
+        `  float dist = length(d);`,
+        `  vec3 wi = d / dist;`,
+        `  if (!${occluded.call(["o", "wi", "dist - 1e-3"])} ) {`,
+        `    sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * pointLight(uPointLightsIntensity[i], 0.0, uPointLightsColor[i], uPointLightsPosition[i], n, pos);`,
+        `  }`,
+        `}`,
+        `return sum;`,
+      ],
+    );
 
-vec3 ambientLight(in float lightIntensity, in vec3 lightColor) {
-  return lightColor * lightIntensity;
-}
-
-vec3 directionalLight(in float lightIntensity,
-                      in vec3  lightColor,
-                      in vec3  lightDir,
-                      in vec3  normal) {
-  return lightColor * lightIntensity * max(0.0, dot(normal, normalize(lightDir)));
-}
-
-vec3 pointLight(in float lightIntensity,
-                in float lightFalloff,
-                in vec3  lightColor,
-                in vec3  lightPosition,
-                in vec3  normal,
-                in vec3  fragmentPosition) {
-  vec3  delta   = lightPosition - fragmentPosition;
-  vec3  dir     = normalize(delta);
-  float falloff = max(0.0, 1.0 - length(delta) * lightFalloff);
-  return lightColor * lightIntensity * falloff * max(0.0, dot(normal, dir));
-}
-
-// "occluded" function must be provided
-
-vec3 directLighting(in vec3 pos, in vec3 n, in vec3 viewDir) {
-  vec3 sum = ambientLight(uAmbientLightIntensity,
-                          uAmbientLightColor); // unshadowed fill
-  vec3 o   = pos + n * 1e-3;                   // offset off the surface
-
-  for (int i = 0; i < uDirectionalLightsNumber; i++) {
-    vec3 L = uDirectionalLightsTo[i];
-    if (!occluded(o, L, INFINITY)) {
-      sum += directionalLight(uDirectionalLightsIntensity[i],
-                              uDirectionalLightsColor[i],
-                              L,
-                              n);
-    }
+    return new GLSLShaderChunk(
+      uniforms,
+      [],
+      [],
+      [directLighting],
+      lightsShaders,
+    );
   }
-  for (int i = 0; i < uPointLightsNumber; i++) {
-    vec3  d    = uPointLightsPosition[i] - pos;
-    float dist = length(d);
-    if (!occluded(o, d / dist, dist - 1e-3)) { // occluders only *before* the light
-      sum += pointLight(uPointLightsIntensity[i],
-                        0.0,
-                        uPointLightsColor[i],
-                        uPointLightsPosition[i],
-                        n,
-                        pos);
-    }
-  }
-  return sum;
 }
-`;
-
-export const prependCustomShaderLightsPreamble = (
-  sceneShaderBody: string,
-) => glsl`
-${PREAMBLE}
-${sceneShaderBody}
-`;

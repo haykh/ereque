@@ -1,9 +1,4 @@
-import {
-  GLSL3,
-  WebGLRenderTarget,
-  NearestFilter,
-  HalfFloatType,
-} from "three";
+import { GLSL3, WebGLRenderTarget, NearestFilter, HalfFloatType } from "three";
 import type { WebGLRenderer, Camera } from "three";
 import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
 
@@ -30,6 +25,7 @@ export interface PingPongRendererOptions {
   fragmentShader?: string; // escape hatch: full trace fragment, bypasses sceneShader
   vertexShader?: string; // default: PingPongRenderer.VertexShader()
   displayFragmentShader?: string; // default: PingPongRenderer.DisplayFragmentShader()
+  debug?: RendererPipelineOptions["debug"];
 }
 
 export default class PingPongRenderer implements RendererPipeline {
@@ -71,6 +67,7 @@ export default class PingPongRenderer implements RendererPipeline {
         opts.fragmentShader ??
         PingPongRenderer.TraceFragmentShader(opts.sceneShader).render(),
       glslVersion: GLSL3,
+      debug: opts.debug,
     });
 
     this.traceMaterial.addUniform(

@@ -106,6 +106,7 @@ export { default as MaterialLibrary } from "./RenderPipelines/Utils/MaterialLibr
 export {
   GLSLScatterContract,
   GLSLEvalBSDFContract,
+  GLSLDirectLightingContract,
 } from "./RenderPipelines/Utils/ShaderContracts";
 export { default as EnvironmentMap } from "./RenderPipelines/Utils/EnvironmentMap";
 export type { EnvironmentMapOptions } from "./RenderPipelines/Utils/EnvironmentMap";

@@ -83,8 +83,11 @@ export default class CustomShaderMaterial {
       });
   }
 
-  public setColorUniform(name: string, value: string): void {
+  public setColorUniform(name: string, value: string | Color): void {
     if (this.instance.uniforms[name]) {
+      if (value instanceof Color) {
+        value = `#${value.getHexString()}`;
+      }
       this.instance.uniforms[name].value.set(new Color(value));
     } else {
       console.warn(

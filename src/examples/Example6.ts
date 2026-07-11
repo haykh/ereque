@@ -16,6 +16,8 @@ import {
   BVHScene,
   CustomShaderLights,
   MaterialLibrary,
+  GLSLScatterContract,
+  GLSLDirectLightingContract,
 } from "ereque";
 import type {
   MaterialModel,
@@ -124,7 +126,28 @@ export class CustomRendererPipeline
       .merge(CustomShaderLights.ShaderChunk())
       .addPostamble(sceneShaderBody)
       .addUniform("vec3 uClearColor")
-      .render();
+      .render({
+        scatter_call: GLSLScatterContract.reference("scatter").call([
+          "mat",
+          "h.position",
+          "h.smoothNormal",
+          "wo",
+          "h.isFrontFace",
+          "rng",
+          "wi",
+          "weight",
+          "emission",
+        ]),
+        direct_lighting_call: GLSLDirectLightingContract.reference(
+          "directLighting",
+        ).call([
+          "mat",
+          "h.position",
+          "h.smoothNormal",
+          "h.geometricNormal",
+          "wo",
+        ]),
+      });
 
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
@@ -143,7 +166,7 @@ export class CustomRendererPipeline
     });
     this.traceMaterial.addColorUniform(
       "uClearColor",
-      this.renderer.getClearColor(new Color()).getHexString(),
+      this.renderer.getClearColor(new Color()),
       false,
     );
   }
@@ -157,7 +180,8 @@ export class CustomRendererPipeline
     if (bvhRebuilt || lightsRebuilt) {
       super.markForRedraw();
     }
-    this.traceMaterial.instance.uniforms.uClearColor.value.set(
+    this.traceMaterial.setColorUniform(
+      "uClearColor",
       this.renderer.getClearColor(new Color()),
     );
     super.render(time);

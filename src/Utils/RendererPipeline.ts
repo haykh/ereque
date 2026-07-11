@@ -18,10 +18,13 @@ export interface RendererPipelineOptions {
 }
 
 export interface RendererPipeline {
+  // called once after resources are loaded
   initialize?(): void;
+  // called every frame
   render(time?: { elapsedSec: number; deltaSec: number }): void;
-  markForRedraw?(): void;
+  // called when the canvas is resized
   resize?(): void;
+  // called when the world is destroyed :(
   destroy?(): void;
 }
 

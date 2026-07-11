@@ -11,7 +11,7 @@ const GLSL_SCATTER_SIGNATURE: GLSLFunctionSignature = [
   "out vec3 wi",
   "out vec3 weight",
   "out vec3 emission",
-  // "out float pdf",
+  "out float pdf",
 ];
 
 const GLSL_EVALBSDF_SIGNATURE: GLSLFunctionSignature = [
@@ -35,6 +35,13 @@ const GLSL_DIRECT_LIGHTING_SIGNATURE: GLSLFunctionSignature = [
   "in vec3 wo",
 ];
 
+const GLSL_BSDFPDF_SIGNATURE: GLSLFunctionSignature = [
+  "in Material mat",
+  "in vec3 n",
+  "in vec3 wo",
+  "in vec3 wi",
+];
+
 export const GLSLScatterContract = new GLSLContract(
   "bool",
   GLSL_SCATTER_SIGNATURE,
@@ -50,4 +57,8 @@ export const GLSLOccludedContract = new GLSLContract(
 export const GLSLDirectLightingContract = new GLSLContract(
   "vec3",
   GLSL_DIRECT_LIGHTING_SIGNATURE,
+);
+export const GLSLBSDFPdfContract = new GLSLContract(
+  "float",
+  GLSL_BSDFPDF_SIGNATURE,
 );

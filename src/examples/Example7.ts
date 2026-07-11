@@ -15,8 +15,6 @@ import {
   CustomShaderLights,
   MaterialLibrary,
   EnvironmentMap,
-  GLSLScatterContract,
-  GLSLDirectLightingContract,
 } from "ereque";
 import type {
   MaterialModel,
@@ -89,6 +87,7 @@ export class CustomRendererPipeline
         name: "glass",
         scatter: [
           glsl`
+          pdf = -1.0;
           float schlick_R0 = pow((1.0 - mat.ior) / (1.0 + mat.ior), 2.0);
           float schlick_R = schlick_R0 + (1.0 - schlick_R0) * pow(1.0 - abs(dot(wo, n)), 5.0);
           if (rand(rng) < schlick_R) {
@@ -107,9 +106,11 @@ export class CustomRendererPipeline
           }
           weight   = mat.albedo;
           emission = vec3(0.0);
+          pdf = -1.0;
           return true;`,
         ],
         eval: ["return vec3(0.0);"],
+        pdf: ["return 0.0;"],
       },
     ];
 
@@ -118,28 +119,7 @@ export class CustomRendererPipeline
       .merge(CustomShaderLights.ShaderChunk())
       .merge(EnvironmentMap.ShaderChunk())
       .addPostamble(sceneShaderBody)
-      .render({
-        scatter_call: GLSLScatterContract.reference("scatter").call([
-          "mat",
-          "h.position",
-          "h.smoothNormal",
-          "wo",
-          "h.isFrontFace",
-          "rng",
-          "wi",
-          "weight",
-          "emission",
-        ]),
-        direct_lighting_call: GLSLDirectLightingContract.reference(
-          "directLighting",
-        ).call([
-          "mat",
-          "h.position",
-          "h.smoothNormal",
-          "h.geometricNormal",
-          "wo",
-        ]),
-      });
+      .render();
 
     console.log(sceneShader);
 
@@ -186,6 +166,7 @@ export class CustomRendererPipeline
   public override destroy(): void {
     this.bvh_scene.destroy();
     this.materials.destroy();
+    this.envMap.destroy();
     super.destroy();
   }
 }

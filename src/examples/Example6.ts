@@ -16,8 +16,6 @@ import {
   BVHScene,
   CustomShaderLights,
   MaterialLibrary,
-  GLSLScatterContract,
-  GLSLDirectLightingContract,
 } from "ereque";
 import type {
   MaterialModel,
@@ -126,28 +124,7 @@ export class CustomRendererPipeline
       .merge(CustomShaderLights.ShaderChunk())
       .addPostamble(sceneShaderBody)
       .addUniform("vec3 uClearColor")
-      .render({
-        scatter_call: GLSLScatterContract.reference("scatter").call([
-          "mat",
-          "h.position",
-          "h.smoothNormal",
-          "wo",
-          "h.isFrontFace",
-          "rng",
-          "wi",
-          "weight",
-          "emission",
-        ]),
-        direct_lighting_call: GLSLDirectLightingContract.reference(
-          "directLighting",
-        ).call([
-          "mat",
-          "h.position",
-          "h.smoothNormal",
-          "h.geometricNormal",
-          "wo",
-        ]),
-      });
+      .render();
 
     super({ ...opts, sceneShader });
     this.scene = opts.scene;

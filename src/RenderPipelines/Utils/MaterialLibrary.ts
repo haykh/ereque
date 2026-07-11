@@ -16,7 +16,12 @@ import {
   GLSLUniform,
   GLSLShaderChunk,
 } from "../../Utils/ShaderTemplate";
-import { GLSLScatterContract, GLSLEvalBSDFContract } from "./ShaderContracts";
+import {
+  GLSLScatterContract,
+  GLSLEvalBSDFContract,
+  GLSLBSDFPdfContract,
+} from "./ShaderContracts";
+import { glsl } from "../../glsl";
 
 type GLSLType = "float" | "vec3";
 
@@ -36,6 +41,7 @@ export interface MaterialModel {
   name: string;
   scatter: GLSLFunctionBody;
   eval?: GLSLFunctionBody; // BRDF value for NEE; defaults to Lambertian eval
+  pdf?: GLSLFunctionBody; // PDF for NEE
 }
 
 export default class MaterialLibrary {
@@ -91,16 +97,14 @@ export default class MaterialLibrary {
   }
 
   public build(materials: Material[]): void {
-    const typeIds = materials.map(
-      (m) => {
-        const id = this.typeOf.get((m.userData?.model as string) ?? "default");
-        if (id === undefined)
-          console.warn(
-            `MaterialLibrary: unknown model "${name}" → default. Pass it to both ShaderChunk() and the constructor.`,
-          );
-        return id ?? 0;
-      },
-    );
+    const typeIds = materials.map((m) => {
+      const id = this.typeOf.get((m.userData?.model as string) ?? "default");
+      if (id === undefined)
+        console.warn(
+          `MaterialLibrary: unknown model "${m.userData?.model}" → default. Pass it to both ShaderChunk() and the constructor.`,
+        );
+      return id ?? 0;
+    });
     const tex = MaterialLibrary.packMaterials(
       materials,
       MaterialLibrary.MATERIAL_SCHEMA,
@@ -166,16 +170,24 @@ export default class MaterialLibrary {
     });
     const typeRead = `m.type = int(texelFetch1D(uMaterials, base + ${MaterialLibrary.MATERIAL_SCHEMA.length}u).r + 0.5);`;
 
-    const DEFAULT_EVALBSDF = "return mat.albedo;";
+    const DEFAULT_EVALBSDF = "return mat.albedo / PI;";
+    const DEFAULT_PDFBSDF = "return max(dot(wi, n), 0.0) / PI;";
 
     const scatterDefault = GLSLScatterContract.implement("scatter_default", [
-      "emission = mat.emission;",
-      "wi     = sampleHemisphere(n, rng);",
-      "weight = mat.albedo;",
-      "return true;",
+      glsl`
+      emission = mat.emission;
+      wi       = sampleHemisphere(n, rng);
+      pdf      = max(dot(wi, n), 0.0) / PI;
+      weight   = mat.albedo;
+      return true;`,
     ]);
+
     const evalBSDFDefault = GLSLEvalBSDFContract.implement("evalBSDF_default", [
       DEFAULT_EVALBSDF,
+    ]);
+
+    const pdfBSDFDefault = GLSLBSDFPdfContract.implement("pdfBSDF_default", [
+      DEFAULT_PDFBSDF,
     ]);
 
     const scatterModels = models.map((m) =>
@@ -203,18 +215,33 @@ export default class MaterialLibrary {
       `return ${evalBSDFDefault.call()};`,
     ]);
 
+    const pdfBSDFModels = models.map((m) =>
+      GLSLBSDFPdfContract.implement(
+        `pdfBSDF_${m.name}`,
+        m.pdf ?? DEFAULT_PDFBSDF,
+      ),
+    );
+
+    const pdfBSDF = GLSLBSDFPdfContract.implement("pdfBSDF", [
+      ...pdfBSDFModels.map(
+        (fn, i) => `if (mat.type == ${i + 1}) return ${fn.call()};`,
+      ),
+      `return ${pdfBSDFDefault.call()};`,
+    ]);
+
     const glslFunctions = [
       new GLSLFunction(
         "vec3",
         "sampleHemisphere",
         ["in vec3 n", "inout uint rng"],
         [
-          "float u1 = rand(rng), u2 = rand(rng);",
-          "float r = sqrt(u1), phi = 2.0 * PI * u2;",
-          "vec3  up = abs(n.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);",
-          "vec3  t  = normalize(cross(up, n));",
-          "vec3  b  = cross(n, t);",
-          "return normalize(r * cos(phi) * t + r * sin(phi) * b + sqrt(1.0 - u1) * n);",
+          glsl`
+          float u1 = rand(rng), u2 = rand(rng);
+          float r = sqrt(u1), phi = 2.0 * PI * u2;
+          vec3  up = abs(n.y) < 0.999 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+          vec3  t  = normalize(cross(up, n));
+          vec3  b  = cross(n, t);
+          return normalize(r * cos(phi) * t + r * sin(phi) * b + sqrt(1.0 - u1) * n);`,
         ],
       ),
       new GLSLFunction(
@@ -235,6 +262,9 @@ export default class MaterialLibrary {
       evalBSDFDefault,
       ...evalBSDFModels,
       evalBSDF,
+      pdfBSDFDefault,
+      ...pdfBSDFModels,
+      pdfBSDF,
     ];
 
     return new GLSLShaderChunk(

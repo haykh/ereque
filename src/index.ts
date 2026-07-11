@@ -37,6 +37,8 @@ export type {
 } from "./Utils/RendererPipeline";
 export { default as ProgressiveAccumulator } from "./RenderPipelines/ProgressiveAccumulator";
 export type { ProgressiveAccumulatorOptions } from "./RenderPipelines/ProgressiveAccumulator";
+export { default as PingPongRenderer } from "./RenderPipelines/PingPongRenderer";
+export type { PingPongRendererOptions } from "./RenderPipelines/PingPongRenderer";
 
 // Asset loading
 export { default as Resources } from "./Utils/Resources";

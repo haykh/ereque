@@ -121,8 +121,6 @@ export class CustomRendererPipeline
       .addPostamble(sceneShaderBody)
       .render();
 
-    console.log(sceneShader);
-
     super({ ...opts, sceneShader });
     this.scene = opts.scene;
     this.bvh_scene = new BVHScene({

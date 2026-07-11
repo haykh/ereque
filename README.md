@@ -85,6 +85,8 @@ new Experience(document.querySelector("canvas.webgl"), { World: Example3 });
 - `Example4`: GPGPU n-body gravity particles
 - `Example5`: GPGPU FDTD maxwell solver
 - `Example6`: Custom pathtracing renderer implementation
+- `Example7`: Custom pathtracing with a more complex scene (refraction + env map)
+- `Example8`: Schwartschild black hole raytracer
 
 Preload assets with `sources`; they resolve on `this.resources.items` before `initialize()` runs:
 

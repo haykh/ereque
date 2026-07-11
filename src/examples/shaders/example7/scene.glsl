@@ -1,7 +1,14 @@
-const int MAX_BOUNCES = 10;
+const int MAX_BOUNCES = 12;
+
+uniform sampler2D uEnvMap;
 
 vec3 skyColor(vec3 dir) {
-  return uClearColor;
+  vec3        d         = normalize(dir);
+  const float RECIP_PI  = 0.3183098861837907;
+  const float RECIP_2PI = 0.15915494309189535;
+  vec2        uv        = vec2(atan(d.z, d.x) * RECIP_2PI + 0.5,
+                 asin(clamp(d.y, -1.0, 1.0)) * RECIP_PI + 0.5);
+  return texture(uEnvMap, uv).rgb;
 }
 
 vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {

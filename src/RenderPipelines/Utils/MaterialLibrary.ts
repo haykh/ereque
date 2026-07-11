@@ -72,6 +72,12 @@ export default class MaterialLibrary {
       extract: (m: any) => m.metalness,
       fallback: 0.0,
     },
+    {
+      name: "ior",
+      type: "float",
+      extract: (m: any) => m.userData.ior ?? 1.0,
+      fallback: 1.0,
+    },
   ];
 
   constructor(opts: MaterialLibraryOptions) {
@@ -86,7 +92,14 @@ export default class MaterialLibrary {
 
   public build(materials: Material[]): void {
     const typeIds = materials.map(
-      (m) => this.typeOf.get((m.userData?.model as string) ?? "default") ?? 0,
+      (m) => {
+        const id = this.typeOf.get((m.userData?.model as string) ?? "default");
+        if (id === undefined)
+          console.warn(
+            `MaterialLibrary: unknown model "${name}" → default. Pass it to both ShaderChunk() and the constructor.`,
+          );
+        return id ?? 0;
+      },
     );
     const tex = MaterialLibrary.packMaterials(
       materials,

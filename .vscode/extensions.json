@@ -5,6 +5,7 @@
     "slevesque.shader",
     "ms-vscode.vscode-typescript-next",
     "dtoplak.vscode-glsllint",
-    "remitafforeau.glsl-complete-support"
+    "remitafforeau.glsl-complete-support",
+    "boyswan.glsl-literal"
   ]
 }

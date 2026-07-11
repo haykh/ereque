@@ -1,10 +1,37 @@
 import { Experience } from "ereque";
 
-// A bundled example scene, imported from the library exactly as a consumer would.
-import Example from "ereque/examples/Example6";
-import { CustomRendererPipeline } from "ereque/examples/Example6";
+// import Example from "ereque/examples/Example1";
+// new Experience(document.querySelector("canvas.webgl"), { World: Example });
 
+// import Example from "ereque/examples/Example2";
+// new Experience(document.querySelector("canvas.webgl"), { World: Example });
+
+// import Example from "ereque/examples/Example3";
+// new Experience(document.querySelector("canvas.webgl"), { World: Example });
+
+// import Example from "ereque/examples/Example4";
+// new Experience(document.querySelector("canvas.webgl"), { World: Example });
+
+// import Example from "ereque/examples/Example5";
+// new Experience(document.querySelector("canvas.webgl"), { World: Example });
+
+// import Example from "ereque/examples/Example6";
+// import { CustomRendererPipeline } from "ereque/examples/Example6";
+// new Experience(document.querySelector("canvas.webgl"), {
+//   World: Example,
+//   pipeline: (o) => new CustomRendererPipeline(o),
+// });
+
+import Example from "ereque/examples/Example7";
+import { CustomRendererPipeline } from "ereque/examples/Example7";
 new Experience(document.querySelector("canvas.webgl"), {
   World: Example,
+  sources: [
+    {
+      name: "envMap",
+      type: "exrTexture",
+      paths: ["../static/hdr/studio_small_03_4k.exr"],
+    },
+  ],
   pipeline: (o) => new CustomRendererPipeline(o),
 });

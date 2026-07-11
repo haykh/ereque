@@ -6,6 +6,7 @@ const GLSL_SCATTER_SIGNATURE: GLSLFunctionSignature = [
   "in vec3 pos",
   "in vec3 n",
   "in vec3 wo",
+  "in bool isFrontFace",
   "inout uint rng",
   "out vec3 wi",
   "out vec3 weight",

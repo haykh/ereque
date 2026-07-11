@@ -46,14 +46,14 @@ export default class CustomShaderMaterial {
     }
   }
 
-  addUniform(
+  public addUniform(
     name: string,
     value: any,
     addUI: boolean = true,
     label: string | undefined = undefined,
     options: Array<number> = [],
     listen: boolean = false,
-  ) {
+  ): void {
     console.log(`Adding uniform ${name} to CustomShaderMaterial ${this.label}`);
     this.instance.uniforms[name] = new Uniform(value);
     if (!addUI) return;
@@ -63,12 +63,15 @@ export default class CustomShaderMaterial {
       .listen(listen);
   }
 
-  addColorUniform(
+  public addColorUniform(
     name: string,
-    value: string,
+    value: string | Color,
     addUI: boolean = true,
     label: string | undefined = undefined,
-  ) {
+  ): void {
+    if (value instanceof Color) {
+      value = `#${value.getHexString()}`;
+    }
     const colorParam = { value: value };
     this.instance.uniforms[name] = new Uniform(new Color(value));
     if (!addUI) return;
@@ -76,15 +79,25 @@ export default class CustomShaderMaterial {
       ?.addColor(colorParam, "value")
       .name(label || name)
       .onChange(() => {
-        this.instance.uniforms[name].value.set(new Color(colorParam.value));
+        this.setColorUniform(name, colorParam.value);
       });
   }
 
-  update(time: { elapsedSec: number }) {
+  public setColorUniform(name: string, value: string): void {
+    if (this.instance.uniforms[name]) {
+      this.instance.uniforms[name].value.set(new Color(value));
+    } else {
+      console.warn(
+        `Uniform ${name} does not exist in CustomShaderMaterial ${this.label}`,
+      );
+    }
+  }
+
+  public update(time: { elapsedSec: number }): void {
     this.instance.uniforms.uTime.value = time.elapsedSec;
   }
 
-  destroy() {
+  public destroy(): void {
     this.instance.dispose();
   }
 }

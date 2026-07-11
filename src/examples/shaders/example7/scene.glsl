@@ -1,16 +1,5 @@
 const int MAX_BOUNCES = 12;
 
-uniform sampler2D uEnvMap;
-
-vec3 skyColor(vec3 dir) {
-  vec3        d         = normalize(dir);
-  const float RECIP_PI  = 0.3183098861837907;
-  const float RECIP_2PI = 0.15915494309189535;
-  vec2        uv        = vec2(atan(d.z, d.x) * RECIP_2PI + 0.5,
-                 asin(clamp(d.y, -1.0, 1.0)) * RECIP_PI + 0.5);
-  return texture(uEnvMap, uv).rgb;
-}
-
 vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
   vec3 radiance         = vec3(0.0);
   vec3 throughput       = vec3(1.0);
@@ -19,7 +8,7 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
   for (int bounce = 0; bounce < MAX_BOUNCES; bounce++) {
     Hit h = intersectScene(rayOriginCurrent, rayDirCurrent);
     if (!h.isHit) {
-      radiance += throughput * skyColor(rayDirCurrent);
+      radiance += throughput * envColor(rayDirCurrent);
       break;
     }
 

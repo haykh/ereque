@@ -1,11 +1,8 @@
 import {
-  LinearFilter,
   Mesh,
   BoxGeometry,
   TorusKnotGeometry,
   MeshStandardMaterial,
-  ClampToEdgeWrapping,
-  RepeatWrapping,
 } from "three";
 import type { DataTexture } from "three";
 import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
@@ -17,6 +14,7 @@ import {
   BVHScene,
   CustomShaderLights,
   MaterialLibrary,
+  EnvironmentMap,
 } from "ereque";
 import type {
   MaterialModel,
@@ -78,8 +76,8 @@ export class CustomRendererPipeline
 
   private bvh_scene: BVHScene;
   private lights: CustomShaderLights;
-
   private materials: MaterialLibrary;
+  private envMap: EnvironmentMap;
 
   public readonly debugFolder: GUI | null = null;
 
@@ -116,6 +114,7 @@ export class CustomRendererPipeline
     const sceneShader = BVHScene.ShaderChunk(true)
       .merge(MaterialLibrary.ShaderChunk(models))
       .merge(CustomShaderLights.ShaderChunk())
+      .merge(EnvironmentMap.ShaderChunk())
       .addPostamble(sceneShaderBody)
       .render();
 
@@ -135,25 +134,18 @@ export class CustomRendererPipeline
       traceMaterial: this.traceMaterial,
       models,
     });
-
-    this.traceMaterial.addUniform("uEnvMap", null, false);
+    this.envMap = new EnvironmentMap({
+      traceMaterial: this.traceMaterial,
+    });
   }
 
   public override initialize(): void {
-    this.applyEnvMap();
-    this.markForRedraw();
-  }
-
-  private applyEnvMap(): void {
     const exr = this.resources.items["envMap"] as DataTexture | undefined;
     if (!exr) {
       return;
     }
-    exr.wrapS = RepeatWrapping;
-    exr.wrapT = ClampToEdgeWrapping;
-    exr.minFilter = exr.magFilter = LinearFilter;
-    exr.needsUpdate = true;
-    this.traceMaterial.instance.uniforms.uEnvMap.value = exr;
+    this.envMap.setTexture(exr);
+    this.markForRedraw();
   }
 
   public override render(time?: { elapsedSec: number }): void {

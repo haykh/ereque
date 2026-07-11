@@ -107,6 +107,8 @@ export {
   GLSLScatterContract,
   GLSLEvalBSDFContract,
 } from "./RenderPipelines/Utils/ShaderContracts";
+export { default as EnvironmentMap } from "./RenderPipelines/Utils/EnvironmentMap";
+export type { EnvironmentMapOptions } from "./RenderPipelines/Utils/EnvironmentMap";
 
 // GLSL tagged-template helper (for inline shader source with editor highlighting)
 export { glsl } from "./glsl";

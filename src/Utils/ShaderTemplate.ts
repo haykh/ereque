@@ -1,4 +1,5 @@
 export type GLSLFunctionArgAccessor = "in" | "out" | "inout";
+export type GLSLVaryingAccessor = "in" | "out";
 
 type GLSLRawChunk = Array<string | StringTemplate> | string | StringTemplate;
 
@@ -90,6 +91,29 @@ export class GLSLUniform {
     const [, type, name, countStr] = match;
     const count = countStr ? parseInt(countStr) : undefined;
     return new GLSLUniform(type, name, count);
+  }
+}
+
+export class GLSLVarying {
+  constructor(
+    private acc: GLSLVaryingAccessor,
+    private type: string,
+    private name: string,
+  ) {}
+
+  public definition(): string {
+    return `${this.acc} ${this.type} ${this.name};`;
+  }
+
+  public static from(raw: string): GLSLVarying {
+    const match = raw.trim().match(/^(in|out)\s+(\w+)\s+(\w+)$/);
+    if (!match) {
+      throw new Error(
+        `Invalid GLSLVarying string format: ${raw}. Expected format: "in|out type name".`,
+      );
+    }
+    const [, acc, type, name] = match;
+    return new GLSLVarying(acc as GLSLVaryingAccessor, type, name);
   }
 }
 
@@ -264,25 +288,41 @@ export class GLSLStruct {
   }
 }
 
+interface GLSLShaderChunkOptions {
+  uniforms?: Array<GLSLUniform>;
+  varyings?: Array<GLSLVarying>;
+  macros?: Array<GLSLMacro>;
+  structs?: Array<GLSLStruct>;
+  functions?: Array<GLSLFunction>;
+  raw_preamble?: GLSLRawChunk;
+  raw_postamble?: GLSLRawChunk;
+}
+
 export class GLSLShaderChunk {
+  private uniforms: Array<GLSLUniform>;
+  private varyings: Array<GLSLVarying>;
+  private macros: Array<GLSLMacro>;
+  private structs: Array<GLSLStruct>;
+  private functions: Array<GLSLFunction>;
   private raw_preamble: StringTemplate;
   private raw_postamble: StringTemplate;
 
-  constructor(
-    private uniforms: Array<GLSLUniform> = [],
-    private macros: Array<GLSLMacro> = [],
-    private structs: Array<GLSLStruct> = [],
-    private functions: Array<GLSLFunction> = [],
-    raw_preamble: GLSLRawChunk = [],
-    raw_postamble: GLSLRawChunk = [],
-  ) {
-    this.raw_preamble = StringTemplate.from(raw_preamble);
-    this.raw_postamble = StringTemplate.from(raw_postamble);
+  constructor(opts?: GLSLShaderChunkOptions) {
+    this.uniforms = opts?.uniforms ?? [];
+    this.varyings = opts?.varyings ?? [];
+    this.macros = opts?.macros ?? [];
+    this.structs = opts?.structs ?? [];
+    this.functions = opts?.functions ?? [];
+    this.raw_preamble = StringTemplate.from(opts?.raw_preamble ?? []);
+    this.raw_postamble = StringTemplate.from(opts?.raw_postamble ?? []);
   }
 
   public render(context: Record<string, string> = {}): string {
     const uniformsStr = this.uniforms
       .map((uniform) => uniform.definition())
+      .join("\n");
+    const varyingsStr = this.varyings
+      .map((varying) => varying.definition())
       .join("\n");
     const macrosStr = this.macros.map((macro) => macro.definition()).join("\n");
     const structsStr = this.structs
@@ -294,6 +334,7 @@ export class GLSLShaderChunk {
     return [
       this.raw_preamble.render(context),
       uniformsStr,
+      varyingsStr,
       macrosStr,
       structsStr,
       functionsStr,
@@ -334,14 +375,15 @@ export class GLSLShaderChunk {
   }
 
   public merge(other: GLSLShaderChunk): GLSLShaderChunk {
-    return new GLSLShaderChunk(
-      [...this.uniforms, ...other.uniforms],
-      [...this.macros, ...other.macros],
-      [...this.structs, ...other.structs],
-      [...this.functions, ...other.functions],
-      this.raw_preamble.merge(other.raw_preamble),
-      this.raw_postamble.merge(other.raw_postamble),
-    );
+    return new GLSLShaderChunk({
+      uniforms: [...this.uniforms, ...other.uniforms],
+      varyings: [...this.varyings, ...other.varyings],
+      macros: [...this.macros, ...other.macros],
+      structs: [...this.structs, ...other.structs],
+      functions: [...this.functions, ...other.functions],
+      raw_preamble: this.raw_preamble.merge(other.raw_preamble),
+      raw_postamble: this.raw_postamble.merge(other.raw_postamble),
+    });
   }
 }
 

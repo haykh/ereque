@@ -223,12 +223,10 @@ export default class CustomShaderLights {
       ],
     );
 
-    return new GLSLShaderChunk(
+    return new GLSLShaderChunk({
       uniforms,
-      [],
-      [],
-      [directLighting],
-      lightsShaders,
-    );
+      functions: [directLighting],
+      raw_preamble: lightsShaders,
+    });
   }
 }

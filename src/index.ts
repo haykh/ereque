@@ -35,12 +35,7 @@ export type {
   RendererPipelineOptions,
   RendererPipelineFactory,
 } from "./Utils/RendererPipeline";
-export {
-  default as ProgressiveAccumulator,
-  buildTraceFragmentShader,
-  ACCUMULATOR_VERTEX_SHADER,
-  DEFAULT_DISPLAY_FRAGMENT_SHADER,
-} from "./RenderPipelines/ProgressiveAccumulator";
+export { default as ProgressiveAccumulator } from "./RenderPipelines/ProgressiveAccumulator";
 export type { ProgressiveAccumulatorOptions } from "./RenderPipelines/ProgressiveAccumulator";
 
 // Asset loading
@@ -85,7 +80,9 @@ export {
   StringTemplate,
   GLSLMacro,
   GLSLVariable,
+  GLSLVarying,
   GLSLFunctionArg,
+  GLSLUniform,
   GLSLFunction,
   GLSLCallable,
   GLSLStruct,

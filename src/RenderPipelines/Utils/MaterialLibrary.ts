@@ -267,11 +267,11 @@ export default class MaterialLibrary {
       pdfBSDF,
     ];
 
-    return new GLSLShaderChunk(
-      glslUniforms,
-      glslMacros,
-      glslStructs,
-      glslFunctions,
-    );
+    return new GLSLShaderChunk({
+      uniforms: glslUniforms,
+      macros: glslMacros,
+      structs: glslStructs,
+      functions: glslFunctions,
+    });
   }
 }

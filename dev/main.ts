@@ -30,7 +30,7 @@ new Experience(document.querySelector("canvas.webgl"), {
     {
       name: "envMap",
       type: "exrTexture",
-      paths: ["../static/hdr/studio_small_03_4k.exr"],
+      paths: ["../static/hdr/christmas_photo_studio_01_4k.exr"],
     },
   ],
   pipeline: (o) => new CustomRendererPipeline(o),

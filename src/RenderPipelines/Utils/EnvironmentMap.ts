@@ -232,11 +232,9 @@ export default class EnvironmentMap {
       ],
     );
 
-    return new GLSLShaderChunk(
+    return new GLSLShaderChunk({
       uniforms,
-      [],
-      [],
-      [dirToUv, uvToDir, envColor, envPdf, sampleEnv, misWeight],
-    );
+      functions: [dirToUv, uvToDir, envColor, envPdf, sampleEnv, misWeight],
+    });
   }
 }

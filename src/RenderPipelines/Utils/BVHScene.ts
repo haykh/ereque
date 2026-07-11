@@ -26,6 +26,7 @@ import { GLSLOccludedContract } from "./ShaderContracts";
 
 import bvhPreambleShader from "./shaders/bvh_preamble.glsl";
 import { SceneMeshSignature } from "../../Utils/SceneSignatures";
+import { glsl } from "../../glsl";
 
 export interface BVHSceneOptions {
   scene: Scene;
@@ -214,45 +215,49 @@ export default class BVHScene {
       ]),
     ];
 
+    const smoothedNormals = (): string => {
+      if (smooth_shading ?? true) {
+        return glsl`
+        vec3 n0 = texelFetch1D(uVertexPayload, faceIndices.x).xyz;
+        vec3 n1 = texelFetch1D(uVertexPayload, faceIndices.y).xyz;
+        vec3 n2 = texelFetch1D(uVertexPayload, faceIndices.z).xyz;
+        vec3 p0 = texelFetch1D(bvh.position, faceIndices.x).xyz;
+        vec3 p1 = texelFetch1D(bvh.position, faceIndices.y).xyz;
+        vec3 p2 = texelFetch1D(bvh.position, faceIndices.z).xyz;
+        h.shadowPosition = h.position
+          - bary.x * min(0.0, dot(h.position - p0, n0)) * n0
+          - bary.y * min(0.0, dot(h.position - p1, n1)) * n1
+          - bary.z * min(0.0, dot(h.position - p2, n2)) * n2;
+        vec3 ns = normalize(bary.x * n0 + bary.y * n1 + bary.z * n2);
+        if (dot(ns, h.geometricNormal) < 0.0) ns = -ns;
+        h.smoothNormal = ns;`;
+      }
+      return glsl`
+        h.shadowPosition = h.position;
+        h.smoothNormal = h.geometricNormal;`;
+    };
+
     const functions = [
       new GLSLFunction(
         "Hit",
         "intersectScene",
         ["in vec3 origin", "in vec3 dir"],
         [
-          "Hit   h;",
-          "uvec4 faceIndices;",
-          "vec3  faceNormal, bary;",
-          "float side, dist;",
-          "h.isHit = bvhIntersectFirstHit(bvh, origin, dir, faceIndices, faceNormal, bary, side, dist);",
-          "if (h.isHit) {",
-          "  h.distance = dist;",
-          "  h.position = origin + dist * dir;",
-          "  h.geometricNormal = normalize(faceNormal);",
-          "  h.isFrontFace = side > 0.0;",
-          ...((smooth_shading ?? true)
-            ? [
-                "  vec3 n0 = texelFetch1D(uVertexPayload, faceIndices.x).xyz;",
-                "  vec3 n1 = texelFetch1D(uVertexPayload, faceIndices.y).xyz;",
-                "  vec3 n2 = texelFetch1D(uVertexPayload, faceIndices.z).xyz;",
-                "  vec3 p0 = texelFetch1D(bvh.position, faceIndices.x).xyz;",
-                "  vec3 p1 = texelFetch1D(bvh.position, faceIndices.y).xyz;",
-                "  vec3 p2 = texelFetch1D(bvh.position, faceIndices.z).xyz;",
-                "  h.shadowPosition = h.position",
-                "    - bary.x * min(0.0, dot(h.position - p0, n0)) * n0",
-                "    - bary.y * min(0.0, dot(h.position - p1, n1)) * n1",
-                "    - bary.z * min(0.0, dot(h.position - p2, n2)) * n2;",
-                "  vec3 ns = normalize(bary.x * n0 + bary.y * n1 + bary.z * n2);",
-                "  if (dot(ns, h.geometricNormal) < 0.0) ns = -ns;",
-                "  h.smoothNormal = ns;",
-              ]
-            : [
-                "  h.shadowPosition = h.position;",
-                "  h.smoothNormal = h.geometricNormal;",
-              ]),
-          "  h.materialId = int(texelFetch1D(uVertexPayload, faceIndices.x).a + 0.5);",
-          "}",
-          "return h;",
+          glsl`
+          Hit   h;
+          uvec4 faceIndices;
+          vec3  faceNormal, bary;
+          float side, dist;
+          h.isHit = bvhIntersectFirstHit(bvh, origin, dir, faceIndices, faceNormal, bary, side, dist);
+          if (h.isHit) {
+            h.distance = dist;
+            h.position = origin + dist * dir;
+            h.geometricNormal = normalize(faceNormal);
+            h.isFrontFace = side > 0.0;
+            ${smoothedNormals()}
+            h.materialId = int(texelFetch1D(uVertexPayload, faceIndices.x).a + 0.5);
+          }
+          return h;`,
         ],
       ),
       GLSLOccludedContract.implement("occluded", [
@@ -260,7 +265,7 @@ export default class BVHScene {
       ]),
     ];
 
-    return new GLSLShaderChunk(uniforms, [], structs, functions)
+    return new GLSLShaderChunk({ uniforms, structs, functions })
       .addPreamble(bvhPreambleShader)
       .bake({ shaderStructs, shaderIntersectFunction });
   }

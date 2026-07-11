@@ -22,15 +22,29 @@ import { Experience } from "ereque";
 //   pipeline: (o) => new CustomRendererPipeline(o),
 // });
 
-import Example from "ereque/examples/Example7";
-import { CustomRendererPipeline } from "ereque/examples/Example7";
+// import Example from "ereque/examples/Example7";
+// import { CustomRendererPipeline } from "ereque/examples/Example7";
+// new Experience(document.querySelector("canvas.webgl"), {
+//   World: Example,
+//   sources: [
+//     {
+//       name: "envMap",
+//       type: "exrTexture",
+//       paths: ["../static/hdr/christmas_photo_studio_01_4k.exr"],
+//     },
+//   ],
+//   pipeline: (o) => new CustomRendererPipeline(o),
+// });
+
+import Example from "ereque/examples/Example8";
+import { CustomRendererPipeline } from "ereque/examples/Example8";
 new Experience(document.querySelector("canvas.webgl"), {
   World: Example,
   sources: [
     {
       name: "envMap",
-      type: "exrTexture",
-      paths: ["../static/hdr/christmas_photo_studio_01_4k.exr"],
+      type: "hdrTexture",
+      paths: ["../static/hdr/HDR_blue_nebulae_3.hdr"],
     },
   ],
   pipeline: (o) => new CustomRendererPipeline(o),

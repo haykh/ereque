@@ -200,7 +200,15 @@ export class GLSLFunction {
     return `${this.returnType} ${this.name}(${argsStr}) {\n${indentedBody}\n}`;
   }
 
-  public call(): string {
+  public call(args?: Array<string>): string {
+    if (args) {
+      if (args.length !== this.args.length) {
+        throw new Error(
+          `${this.name} expects ${this.args.length} args, got ${args.length}`,
+        );
+      }
+      return `${this.name}(${args.join(", ")})`;
+    }
     const argsStr = this.args.map((arg) => arg.reference()).join(", ");
     return `${this.name}(${argsStr})`;
   }

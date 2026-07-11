@@ -56,20 +56,24 @@ export default class Renderer<P extends RendererPipeline = RendererPipeline> {
     this.resize();
   }
 
-  public setClearColor(color: string) {
+  public initialize(): void {
+    this.pipeline.initialize?.();
+  }
+
+  public setClearColor(color: string): void {
     this.params.clearColor = color;
     this.instance.setClearColor(this.params.clearColor);
   }
 
-  resize() {
+  public resize(): void {
     this.pipeline.resize?.();
   }
 
-  update(time: { elapsedSec: number; deltaSec: number }) {
+  public update(time: { elapsedSec: number; deltaSec: number }): void {
     this.pipeline.render(time);
   }
 
-  destroy() {
+  public destroy(): void {
     this.debugFolder?.destroy();
     this.pipeline.destroy?.();
     this.instance.dispose();

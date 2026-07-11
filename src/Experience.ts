@@ -67,7 +67,13 @@ export default class Experience {
 
     this.world = new WorldClass(this.opts());
 
-    this.world.start();
+    if (this.resources.isReady) {
+      this.initialize();
+    } else {
+      this.resources.on("ready", () => {
+        this.initialize();
+      });
+    }
 
     this.sizes.on("resize", () => {
       this.resize();
@@ -77,7 +83,16 @@ export default class Experience {
     });
   }
 
-  opts() {
+  public opts(): {
+    time: Time;
+    sizes: Sizes;
+    canvas: HTMLCanvasElement;
+    scene: Scene;
+    camera: Camera;
+    renderer: Renderer;
+    resources: Resources;
+    debug: Debug;
+  } {
     return {
       time: this.time,
       sizes: this.sizes,
@@ -90,19 +105,24 @@ export default class Experience {
     };
   }
 
-  resize() {
+  public initialize(): void {
+    this.world.initialize?.();
+    this.renderer.initialize();
+  }
+
+  public resize(): void {
     this.camera.resize();
     this.renderer.resize();
   }
 
-  update() {
+  public update(): void {
     this.camera.update();
     this.renderer.update(this.time);
     this.world.update?.();
     this.stats.update();
   }
 
-  destroy() {
+  public destroy(): void {
     this.world.destroy();
 
     this.resources.destroy();

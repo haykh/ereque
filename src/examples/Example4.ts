@@ -181,14 +181,10 @@ class Simulation extends ParticleSimulation {
     });
   }
 
-  update(_: Camera, time: { elapsedSec: number }) {
+  public update(_: Camera, time: { elapsedSec: number }): void {
     this.gpgpu.compute("velocity_update");
     this.gpgpu.compute("position_update");
     this.particleRenderer.render(time);
-  }
-
-  destroy() {
-    super.destroy();
   }
 }
 
@@ -206,11 +202,11 @@ export default class Example extends World {
     });
   }
 
-  public override update() {
+  public override update(): void {
     this.simulation.update(this.camera.instance, this.time);
   }
 
-  destroy() {
+  public override destroy(): void {
     super.destroy();
     this.simulation.destroy();
   }

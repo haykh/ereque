@@ -31,10 +31,10 @@ export interface WorldOptions {
 export class World {
   protected time: WorldOptions["time"];
   protected sizes: WorldOptions["sizes"];
-  protected scene: Scene;
+  protected scene: WorldOptions["scene"];
   protected renderer: WorldOptions["renderer"];
   protected camera: WorldOptions["camera"];
-  protected resources: Resources;
+  protected resources: WorldOptions["resources"];
   protected debug: WorldOptions["debug"];
 
   public debugFolder: GUI | null = null;
@@ -53,21 +53,11 @@ export class World {
     }
   }
 
-  start() {
-    if (this.resources.isReady) {
-      this.initialize?.();
-    } else {
-      this.resources.on("ready", () => {
-        this.initialize?.();
-      });
-    }
-  }
-
-  protected initialize?(): void;
+  public initialize?(): void;
 
   public update?(): void;
 
-  opts() {
+  public opts(): WorldOptions {
     return {
       time: this.time,
       sizes: this.sizes,
@@ -79,7 +69,7 @@ export class World {
     };
   }
 
-  destroy() {
+  public destroy(): void {
     this.debugFolder?.destroy();
   }
 }

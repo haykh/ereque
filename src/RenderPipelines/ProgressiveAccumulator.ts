@@ -19,6 +19,7 @@ export interface ProgressiveAccumulatorOptions {
   renderer: WebGLRenderer;
   sizes: RendererPipelineOptions["sizes"];
   camera: Camera;
+  resources: RendererPipelineOptions["resources"];
   sceneShader: string; // defines `vec3 sampleRadiance(Ray, inout float)` + scene uniforms
   fragmentShader?: string; // escape hatch: full trace fragment, bypasses sceneShader
   vertexShader?: string; // default: ACCUMULATOR_VERTEX_SHADER
@@ -29,6 +30,7 @@ export default class ProgressiveAccumulator implements RendererPipeline {
   protected renderer: WebGLRenderer;
   protected sizes: ProgressiveAccumulatorOptions["sizes"];
   protected camera: Camera;
+  protected resources: RendererPipelineOptions["resources"];
 
   protected targets: [WebGLRenderTarget, WebGLRenderTarget];
   protected readIdx = 0;
@@ -44,6 +46,7 @@ export default class ProgressiveAccumulator implements RendererPipeline {
     this.renderer = opts.renderer;
     this.sizes = opts.sizes;
     this.camera = opts.camera;
+    this.resources = opts.resources;
 
     // ping-pong render targets
     const res = this.sizes.pixelResolution;
@@ -99,11 +102,15 @@ export default class ProgressiveAccumulator implements RendererPipeline {
     this.displayQuad = new FullScreenQuad(this.displayMaterial.instance);
   }
 
-  protected markForRedraw(): void {
+  public initialize(): void {
+    this.markForRedraw();
+  }
+
+  public markForRedraw(): void {
     this.frame = 1;
   }
 
-  render(time?: { elapsedSec: number }): void {
+  public render(time?: { elapsedSec: number }): void {
     this.camera.updateMatrixWorld();
 
     // reset accumulation on camera move
@@ -134,7 +141,7 @@ export default class ProgressiveAccumulator implements RendererPipeline {
     this.readIdx = 1 - this.readIdx;
   }
 
-  resize(): void {
+  public resize(): void {
     this.renderer.setSize(this.sizes.width, this.sizes.height);
     this.renderer.setPixelRatio(this.sizes.pixelRatio);
     const res = this.sizes.pixelResolution;
@@ -144,7 +151,7 @@ export default class ProgressiveAccumulator implements RendererPipeline {
     this.markForRedraw();
   }
 
-  destroy(): void {
+  public destroy(): void {
     this.displayQuad.dispose();
     this.traceQuad.dispose();
     this.displayMaterial.destroy();

@@ -36,7 +36,7 @@ export default class Example extends World {
     opts.camera.controls.enableDamping = false;
   }
 
-  protected override initialize() {
+  public override initialize(): void {
     // meshes
     const sphere = new Mesh(
       new IcosahedronGeometry(1, 3),
@@ -76,9 +76,7 @@ export default class Example extends World {
     this.scene.add(ambient);
   }
 
-  public override update() {}
-
-  destroy() {
+  public override destroy(): void {
     super.destroy();
     for (const child of this.scene.children) {
       if (child instanceof Mesh) {

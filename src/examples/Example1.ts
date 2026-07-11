@@ -1,7 +1,7 @@
 import { Mesh, SphereGeometry } from "three";
 
 import type { WorldOptions } from "ereque";
-import {World, CustomShaderMaterial} from "ereque";
+import { World, CustomShaderMaterial } from "ereque";
 
 /*
  * Example with custom shader material
@@ -16,7 +16,7 @@ export default class Example extends World {
     super(opts);
   }
 
-  protected override initialize() {
+  public override initialize(): void {
     this.shader_material = new CustomShaderMaterial("shader material", {
       vertexShader,
       fragmentShader,
@@ -29,11 +29,11 @@ export default class Example extends World {
     this.scene.add(sphere);
   }
 
-  public override update() {
+  public override update(): void {
     this.shader_material?.update(this.time);
   }
 
-  destroy() {
+  public override destroy(): void {
     super.destroy();
     this.shader_material?.destroy();
   }

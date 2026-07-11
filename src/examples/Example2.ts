@@ -94,7 +94,7 @@ class Simulation extends GridSimulation {
     this.init({ Heat: initTexture });
   }
 
-  update(camera: Camera, time: { elapsedSec: number }) {
+  public update(camera: Camera, time: { elapsedSec: number }): void {
     this.mouseTracker.update(camera);
 
     const intersections = this.mouseTracker.raycaster.intersectObject(
@@ -117,7 +117,7 @@ class Simulation extends GridSimulation {
     this.gridRenderer2D.render(time);
   }
 
-  destroy() {
+  public override destroy(): void {
     this.mouseTracker.destroy();
     super.destroy();
   }
@@ -140,11 +140,11 @@ export default class Example extends World {
     );
   }
 
-  public override update() {
+  public override update(): void {
     this.simulation.update(this.camera.instance, this.time);
   }
 
-  destroy() {
+  public override destroy(): void {
     super.destroy();
     this.simulation.destroy();
   }

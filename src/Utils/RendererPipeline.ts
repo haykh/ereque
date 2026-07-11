@@ -18,7 +18,9 @@ export interface RendererPipelineOptions {
 }
 
 export interface RendererPipeline {
+  initialize?(): void;
   render(time?: { elapsedSec: number; deltaSec: number }): void;
+  markForRedraw?(): void;
   resize?(): void;
   destroy?(): void;
 }

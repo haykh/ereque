@@ -25,14 +25,9 @@ export default class ProgressiveAccumulator
   constructor(opts: ProgressiveAccumulatorOptions) {
     super({
       ...opts,
-      vertexShader:
-        opts.vertexShader ?? ProgressiveAccumulator.VertexShader().render(),
       fragmentShader:
         opts.fragmentShader ??
         ProgressiveAccumulator.TraceFragmentShader(opts.sceneShader).render(),
-      displayFragmentShader:
-        opts.displayFragmentShader ??
-        ProgressiveAccumulator.DisplayFragmentShader().render(),
     });
     this.traceMaterial.addUniform("uPrevRendered", null, false);
     this.traceMaterial.addUniform("uFrame", 1, false);
@@ -80,48 +75,6 @@ export default class ProgressiveAccumulator
   public override resize(): void {
     super.resize();
     this.markForRedraw();
-  }
-
-  protected static VertexShader(): GLSLShaderChunk {
-    return new GLSLShaderChunk({
-      varyings: [new GLSLVarying("out", "vec2", "vUv")],
-      functions: [
-        new GLSLFunction(
-          "void",
-          "main",
-          [],
-          [
-            glsl`
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);`,
-          ],
-        ),
-      ],
-    });
-  }
-
-  protected static DisplayFragmentShader(): GLSLShaderChunk {
-    return new GLSLShaderChunk({
-      uniforms: [new GLSLUniform("sampler2D", "uRendered")],
-      varyings: [
-        new GLSLVarying("in", "vec2", "vUv"),
-        new GLSLVarying("out", "vec4", "fragColor"),
-      ],
-      functions: [
-        new GLSLFunction(
-          "void",
-          "main",
-          [],
-          [
-            glsl`
-            vec3 c = texture(uRendered, vUv).rgb;
-            c = c / (c + 1.0);            // Reinhard tone map (HDR -> LDR)
-            c = pow(c, vec3(1.0 / 2.2));  // linear -> sRGB
-            fragColor = vec4(c, 1.0);`,
-          ],
-        ),
-      ],
-    });
   }
 
   protected static TraceFragmentShader(sceneShader?: string): GLSLShaderChunk {

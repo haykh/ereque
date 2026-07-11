@@ -15,6 +15,8 @@ import {
   CustomShaderLights,
   MaterialLibrary,
   EnvironmentMap,
+  GLSLScatterContract,
+  GLSLDirectLightingContract,
 } from "ereque";
 import type {
   MaterialModel,
@@ -116,7 +118,28 @@ export class CustomRendererPipeline
       .merge(CustomShaderLights.ShaderChunk())
       .merge(EnvironmentMap.ShaderChunk())
       .addPostamble(sceneShaderBody)
-      .render();
+      .render({
+        scatter_call: GLSLScatterContract.reference("scatter").call([
+          "mat",
+          "h.position",
+          "h.smoothNormal",
+          "wo",
+          "h.isFrontFace",
+          "rng",
+          "wi",
+          "weight",
+          "emission",
+        ]),
+        direct_lighting_call: GLSLDirectLightingContract.reference(
+          "directLighting",
+        ).call([
+          "mat",
+          "h.position",
+          "h.smoothNormal",
+          "h.geometricNormal",
+          "wo",
+        ]),
+      });
 
     console.log(sceneShader);
 

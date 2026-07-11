@@ -15,19 +15,10 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
     Material mat = getMaterial(h.materialId);
     vec3     wo  = -rayDirCurrent;
     vec3     wi, weight, emission;
-    bool     cont = scatter(mat,
-                        h.position,
-                        h.smoothNormal,
-                        wo,
-                        h.isFrontFace,
-                        rng,
-                        wi,
-                        weight,
-                        emission);
+    bool     cont = ${scatter_call};
 
     radiance += throughput * emission;
-    radiance += throughput *
-                directLighting(mat, h.position, h.smoothNormal, h.geometricNormal, wo);
+    radiance += throughput * ${direct_lighting_call};
 
     if (!cont) {
       break;

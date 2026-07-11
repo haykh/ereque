@@ -2,15 +2,13 @@ import type { Scene, PointLight, DirectionalLight, AmbientLight } from "three";
 import { Vector3 } from "three";
 
 import type CustomShaderMaterial from "../../Utils/CustomShaderMaterial";
-import {
-  GLSLFunction,
-  GLSLUniform,
-  GLSLShaderChunk,
-} from "../../Utils/ShaderTemplate";
+import { GLSLUniform, GLSLShaderChunk } from "../../Utils/ShaderTemplate";
 import { GLSLEvalBSDFContract, GLSLOccludedContract } from "./ShaderContracts";
 
 import lightsShaders from "./shaders/lights.glsl";
+import { GLSLDirectLightingContract } from "./ShaderContracts";
 import { SceneLightSignature } from "../../Utils/SceneSignatures";
+import { glsl } from "../../glsl";
 
 const MAX_LIGHTS = 64;
 
@@ -201,34 +199,27 @@ export default class CustomShaderLights {
     const evalBSDF = GLSLEvalBSDFContract.reference("evalBSDF");
     const occluded = GLSLOccludedContract.reference("occluded");
 
-    const directLighting = new GLSLFunction(
-      "vec3",
+    const directLighting = GLSLDirectLightingContract.implement(
       "directLighting",
       [
-        "in Material mat",
-        "in vec3 pos",
-        "in vec3 n",
-        "in vec3 ng",
-        "in vec3 wo",
-      ],
-      [
-        `vec3 sum = ${evalBSDF.call(["mat", "n", "wo", "n"])} * ambientLight(uAmbientLightIntensity, uAmbientLightColor);`,
-        `vec3 o = pos + ng * 1e-3;`,
-        `for (int i = 0; i < uDirectionalLightsNumber; i++) {`,
-        `  vec3 wi = uDirectionalLightsTo[i];`,
-        `  if (!${occluded.call(["o", "wi", "INFINITY"])} ) {`,
-        `    sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * directionalLight(uDirectionalLightsIntensity[i], uDirectionalLightsColor[i], wi, n);`,
-        `  }`,
-        `}`,
-        `for (int i = 0; i < uPointLightsNumber; i++) {`,
-        `  vec3 d = uPointLightsPosition[i] - pos;`,
-        `  float dist = length(d);`,
-        `  vec3 wi = d / dist;`,
-        `  if (!${occluded.call(["o", "wi", "dist - 1e-3"])} ) {`,
-        `    sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * pointLight(uPointLightsIntensity[i], 0.0, uPointLightsColor[i], uPointLightsPosition[i], n, pos);`,
-        `  }`,
-        `}`,
-        `return sum;`,
+        glsl`
+        vec3 sum = ${evalBSDF.call(["mat", "n", "wo", "n"])} * ambientLight(uAmbientLightIntensity, uAmbientLightColor);
+        vec3 o = pos + ng * 1e-3;
+        for (int i = 0; i < uDirectionalLightsNumber; i++) {
+          vec3 wi = uDirectionalLightsTo[i];
+          if (!${occluded.call(["o", "wi", "INFINITY"])} ) {
+            sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * directionalLight(uDirectionalLightsIntensity[i], uDirectionalLightsColor[i], wi, n);
+          }
+        }
+        for (int i = 0; i < uPointLightsNumber; i++) {
+          vec3 d = uPointLightsPosition[i] - pos;
+          float dist = length(d);
+          vec3 wi = d / dist;
+          if (!${occluded.call(["o", "wi", "dist - 1e-3"])} ) {
+            sum += ${evalBSDF.call(["mat", "n", "wo", "wi"])} * pointLight(uPointLightsIntensity[i], 0.0, uPointLightsColor[i], uPointLightsPosition[i], n, pos);
+          }
+        }
+        return sum;`,
       ],
     );
 

@@ -31,6 +31,14 @@ export default class EnvironmentMap {
   constructor(opts: EnvironmentMapOptions) {
     this.traceMaterial = opts.traceMaterial;
     this.traceMaterial.addUniform("uEnvMap", null, false);
+    this.traceMaterial.addUniform(
+      "uEnvIntensity",
+      1.0,
+      true,
+      "environment intensity",
+      [0, 10],
+      true,
+    );
     this.traceMaterial.addUniform("uEnvCDF", null, false);
     this.traceMaterial.addUniform("uEnvPdf", null, false);
     this.traceMaterial.addUniform("uEnvWidth", 1, false);
@@ -48,6 +56,10 @@ export default class EnvironmentMap {
     texture.needsUpdate = true;
     this.traceMaterial.instance.uniforms.uEnvMap.value = texture;
     this.build(texture);
+  }
+
+  public setIntensity(intensity: number): void {
+    this.traceMaterial.instance.uniforms.uEnvIntensity.value = intensity;
   }
 
   private build(texture: DataTexture): void {
@@ -146,6 +158,7 @@ export default class EnvironmentMap {
   public static ShaderChunk(): GLSLShaderChunk {
     const uniforms = [
       new GLSLUniform("sampler2D", "uEnvMap"),
+      new GLSLUniform("float", "uEnvIntensity"),
       new GLSLUniform("sampler2D", "uEnvCDF"),
       new GLSLUniform("sampler2D", "uEnvPdf"),
       new GLSLUniform("int", "uEnvWidth"),

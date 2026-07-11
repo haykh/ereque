@@ -47,8 +47,8 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
       vec3  wl, Le;
       float pdfL;
       sampleEnv(rng, wl, pdfL, Le);
-      vec3 o2 = h.position + h.geometricNormal * 1e-3;
-      if (pdfL > 0.0 && dot(wl, h.geometricNormal) > 0.0 &&
+      vec3 o2 = h.shadowPosition + h.geometricNormal * 1e-4;
+      if (pdfL > 0.0 && dot(wl, h.smoothNormal) > 0.0 &&
           !occluded(o2, wl, INFINITY)) {
         float pdfB  = pdfBSDF(mat, h.smoothNormal, wo, wl);
         float w     = misWeight(pdfL, pdfB);
@@ -65,7 +65,8 @@ vec3 sampleRadiance(in vec3 rayOrigin, in vec3 rayDir, inout uint rng) {
     throughput     *= weight;
     lastPdf         = pdf;
     specularBounce  = (pdf < 0.0);
-    o = h.position + sign(dot(wi, h.geometricNormal)) * h.geometricNormal * 1e-3;
+    vec3 base = (dot(wi, h.geometricNormal) > 0.0) ? h.shadowPosition : h.position;
+    o = base + sign(dot(wi, h.geometricNormal)) * h.geometricNormal * 1e-4;
     d = wi;
   }
   return radiance;

@@ -43,6 +43,7 @@ export interface BVHSceneOptions {
  *   * `bool isHit`: whether the ray hit any geometry
  *   * `float distance`: distance from ray origin to intersection point
  *   * `vec3 position`: world-space position of the intersection
+ *   * `vec3 shadowPosition`: terminator-safe ray origin for shadow rays
  *   * `vec3 smoothNormal`: interpolated normal at the intersection point
  *   * `vec3 geometricNormal`: face normal of the intersected triangle
  *   * `int materialId`: index of the material associated with the intersected geometry
@@ -205,6 +206,7 @@ export default class BVHScene {
         "bool isHit",
         "float distance",
         "vec3 position",
+        "vec3 shadowPosition",
         "vec3 smoothNormal",
         "vec3 geometricNormal",
         "bool isFrontFace",
@@ -233,11 +235,21 @@ export default class BVHScene {
                 "  vec3 n0 = texelFetch1D(uVertexPayload, faceIndices.x).xyz;",
                 "  vec3 n1 = texelFetch1D(uVertexPayload, faceIndices.y).xyz;",
                 "  vec3 n2 = texelFetch1D(uVertexPayload, faceIndices.z).xyz;",
+                "  vec3 p0 = texelFetch1D(bvh.position, faceIndices.x).xyz;",
+                "  vec3 p1 = texelFetch1D(bvh.position, faceIndices.y).xyz;",
+                "  vec3 p2 = texelFetch1D(bvh.position, faceIndices.z).xyz;",
+                "  h.shadowPosition = h.position",
+                "    - bary.x * min(0.0, dot(h.position - p0, n0)) * n0",
+                "    - bary.y * min(0.0, dot(h.position - p1, n1)) * n1",
+                "    - bary.z * min(0.0, dot(h.position - p2, n2)) * n2;",
                 "  vec3 ns = normalize(bary.x * n0 + bary.y * n1 + bary.z * n2);",
                 "  if (dot(ns, h.geometricNormal) < 0.0) ns = -ns;",
                 "  h.smoothNormal = ns;",
               ]
-            : ["  h.smoothNormal = h.geometricNormal;"]),
+            : [
+                "  h.shadowPosition = h.position;",
+                "  h.smoothNormal = h.geometricNormal;",
+              ]),
           "  h.materialId = int(texelFetch1D(uVertexPayload, faceIndices.x).a + 0.5);",
           "}",
           "return h;",

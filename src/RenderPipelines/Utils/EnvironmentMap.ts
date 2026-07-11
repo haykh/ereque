@@ -228,7 +228,7 @@ export default class EnvironmentMap {
       ["in float a", "in float b"],
       [
         "return (a + b > 0.0) ? a / (a + b) : 0.0;", // balance heuristic
-        // "float a2 = a*a, b2 = b*b; return (a2 + b2 > 0.0) ? a2 / (a2 + b2) : 0.0;" // power heuristic
+        // "float a2 = a*a, b2 = b*b; return (a2 + b2 > 0.0) ? a2 / (a2 + b2) : 0.0;", // power heuristic
       ],
     );
 
